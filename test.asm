@@ -1,4 +1,5 @@
-:PUSH NOPi :
+$data
+	foo
 
-PUSH 00000000
-PUSH 00000001
+$code
+	@foo

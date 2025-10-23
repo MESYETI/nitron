@@ -28,7 +28,19 @@ enum {
 	VM_INST_READ8   = 0x15,
 	VM_INST_WRITE8  = 0x16,
 	VM_INST_READ16  = 0x17,
-	VM_INST_WRITE16 = 0x18
+	VM_INST_WRITE16 = 0x18,
+	VM_INST_JZ      = 0x19,
+	VM_INST_DIVMOD  = 0x20,
+	VM_INST_EQU     = 0x21,
+	VM_INST_LESS    = 0x22,
+	VM_INST_GREATER = 0x23,
+	VM_INST_LE      = 0x24,
+	VM_INST_GE      = 0x25,
+	VM_INST_NEG     = 0x26,
+	VM_INST_AND     = 0x27,
+	VM_INST_XOR     = 0x28,
+	VM_INST_OR      = 0x29,
+	VM_INST_NOT     = 0x2A
 };
 
 typedef struct VM VM;

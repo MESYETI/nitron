@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "mem.h"
 #include "calls.h"
 
 static void PrintCh(VM* vm) {
@@ -28,8 +29,31 @@ static void Dump(VM* vm) {
 	}
 }
 
+static void Alloc(VM* vm) {
+	vm->dsp[-1] = (uint32_t) SafeMalloc(vm->dsp[-1]);
+}
+
+static void Realloc(VM* vm) {
+	-- vm->dsp;
+	vm->dsp[-1] = (uint32_t) SafeRealloc((void*) vm->dsp[-1], vm->dsp[0]);
+}
+
+static void Free(VM* vm) {
+	-- vm->dsp;
+	free((void*) *vm->dsp);
+}
+
+static void PrintHex(VM* vm) {
+	-- vm->dsp;
+	printf("%.8X", *vm->dsp);
+}
+
 void Calls_InitVMCalls(VM* vm) {
 	vm->calls[0] = &PrintCh;
 	vm->calls[1] = &PrintStr;
 	vm->calls[2] = &Dump;
+	vm->calls[3] = &Alloc;
+	vm->calls[4] = &Realloc;
+	vm->calls[5] = &Free;
+	vm->calls[6] = &PrintHex;
 }

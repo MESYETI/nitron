@@ -152,6 +152,84 @@ INST(Write16) {
 	*((uint16_t*) vm->dsp[1]) = vm->dsp[0];
 }
 
+INST(Jz) {
+	vm->dsp -= 2;
+
+	if (vm->dsp[1] >= vm->codeSize) {
+		fprintf(stderr, "Invalid jump: %.8X\n", vm->dsp[1]);
+	}
+
+	if (vm->dsp[0] == 0) {
+		vm->ip = &vm->code[vm->dsp[1]];
+	}
+}
+
+INST(DivMod) {
+	uint32_t a = vm->dsp[-2];
+	uint32_t b = vm->dsp[-1];
+
+	vm->dsp[-2] = a % b;
+	vm->dsp[-1] = a / b;
+}
+
+INST(Equ) {
+	-- vm->dsp;
+
+	vm->dsp[-1] = vm->dsp[-1] == vm->dsp[0]? 1 : 0;
+}
+
+INST(Less) {
+	-- vm->dsp;
+
+	vm->dsp[-1] = vm->dsp[-1] < vm->dsp[0]? 1 : 0;
+}
+
+INST(Greater) {
+	-- vm->dsp;
+
+	vm->dsp[-1] = vm->dsp[-1] > vm->dsp[0]? 1 : 0;
+}
+
+INST(LE) {
+	-- vm->dsp;
+
+	vm->dsp[-1] = vm->dsp[-1] <= vm->dsp[0]? 1 : 0;
+}
+
+INST(GE) {
+	-- vm->dsp;
+
+	vm->dsp[-1] = vm->dsp[-1] >= vm->dsp[0]? 1 : 0;
+}
+
+INST(Neg) {
+	if (vm->dsp[-1] == 0) {
+		vm->dsp[-1] = 1;
+	}
+	else {
+		vm->dsp[-1] = 0;
+	}
+}
+
+INST(And) {
+	-- vm->dsp;
+	vm->dsp[-1] &= vm->dsp[0];
+}
+
+INST(Xor) {
+	-- vm->dsp;
+	vm->dsp[-1] ^= vm->dsp[0];
+}
+
+INST(Or) {
+	-- vm->dsp;
+	vm->dsp[-1] |= vm->dsp[0];
+}
+
+INST(Not) {
+	vm->dsp[-1] = ~vm->dsp[-1];
+}
+
 void VM_Init(VM* vm) {
 	vm->area   = SafeMalloc(1048576);
 	vm->ip     = 0;
@@ -189,6 +267,18 @@ void VM_Init(VM* vm) {
 	vm->insts[0x16] = &Inst_Write8;
 	vm->insts[0x17] = &Inst_Read16;
 	vm->insts[0x18] = &Inst_Write16;
+	vm->insts[0x19] = &Inst_Jz;
+	vm->insts[0x20] = &Inst_DivMod;
+	vm->insts[0x21] = &Inst_Equ;
+	vm->insts[0x22] = &Inst_Less;
+	vm->insts[0x23] = &Inst_Greater;
+	vm->insts[0x24] = &Inst_LE;
+	vm->insts[0x25] = &Inst_GE;
+	vm->insts[0x26] = &Inst_Neg;
+	vm->insts[0x27] = &Inst_And;
+	vm->insts[0x28] = &Inst_Xor;
+	vm->insts[0x29] = &Inst_Or;
+	vm->insts[0x2A] = &Inst_Not;
 }
 
 void VM_Free(VM* vm) {

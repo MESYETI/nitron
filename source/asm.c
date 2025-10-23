@@ -172,7 +172,13 @@ uint8_t* Assemble(const char* code, size_t* size, VM* vm, bool init) {
 		token[len] = 0;
 		code += len + 1;
 
-		if (strspn(token, "0123456789abcdef") == len) {
+		if (token[0] == '"') {
+			EXTEND_BY(len - 1);
+
+			uint8_t* write = data? dataIdx : &ret[retLen - len + 1];
+			memcpy(write, &token[1], len - 1);;
+		}
+		else if (strspn(token, "0123456789abcdef") == len) {
 			// this is an integer
 			switch (len) {
 				case 2: { // byte
@@ -260,7 +266,19 @@ uint8_t* Assemble(const char* code, size_t* size, VM* vm, bool init) {
 				{"READ8",   0x15}, {"READ8i",   0x95},
 				{"WRITE8",  0x16}, {"WRITE8i",  0x96},
 				{"READ16",  0x17}, {"READ16i",  0x97},
-				{"WRITE16", 0x18}, {"WRITE16i", 0x98}
+				{"WRITE16", 0x18}, {"WRITE16i", 0x98},
+				{"JZ",      0x19}, {"JZi",      0x99},
+				{"DIVMOD",  0x20}, {"DIVMODi",  0xA0},
+				{"EQU",     0x21}, {"EQUi",     0xA1},
+				{"LESS",    0x22}, {"LESSi",    0xA2},
+				{"GREATER", 0x23}, {"GREATERi", 0xA3},
+				{"LE",      0x24}, {"LEi",      0xA4},
+				{"GE",      0x25}, {"GEi",      0xA5},
+				{"NEG",     0x26}, {"NEGi",     0xA6},
+				{"AND",     0x27}, {"ANDi",     0xA7},
+				{"XOR",     0x28}, {"XORi",     0xA8},
+				{"OR",      0x29}, {"ORi",      0xA9},
+				{"NOT",     0x2A}, {"NOTi",     0xAA}
 			};
 
 			for (size_t i = 0; i < sizeof(insts) / sizeof(InstDef); ++ i) {

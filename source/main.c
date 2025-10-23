@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
 
 	if (dumpRom) {
 		for (size_t i = 0; i < size; ++ i) {
-			printf("%.8X: %.2X\n", i, rom[i]);
+			printf("%.8X: %.2X (%c)\n", i, rom[i], rom[i]);
 		}
 
 		return 0;
