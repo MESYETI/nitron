@@ -4,6 +4,6 @@
 #include "vm.h"
 #include "common.h"
 
-uint8_t* Assemble(const char* code, size_t* size, VM* vm);
+uint8_t* Assemble(const char* code, size_t* size, VM* vm, bool init);
 
 #endif

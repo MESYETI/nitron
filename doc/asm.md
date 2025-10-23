@@ -8,3 +8,6 @@ Use `$data` and `$code` to use the two sections
 
 ## Constants
 `define NAME VALUE`
+
+## Macro
+`:NAME CONTENTS :`

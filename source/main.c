@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
 	size_t size;
 	char*  file = ReadFile(path, &size);
 
-	uint8_t* rom = Assemble(file, &size, &vm);
+	uint8_t* rom = Assemble(file, &size, &vm, true);
 
 	if (dumpRom) {
 		for (size_t i = 0; i < size; ++ i) {

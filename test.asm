@@ -1,3 +1,4 @@
-define foobar 10
+:PUSH NOPi :
 
-foobar foobar foobar
+PUSH 00000000
+PUSH 00000001

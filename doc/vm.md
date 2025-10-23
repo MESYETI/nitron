@@ -30,7 +30,12 @@ Instructions have this format:
 - `0x12` - ECALL
 - `0x13` - REG
 - `0x14` - WREG
+- `0x15` - READ8
+- `0x16` - WRITE8
+- `0x17` - READ16
+- `0x18` - WRITE16
 
 ## System calls
 - `0x00` - Print character: `( ch -- )`
 - `0x01` - Print string: `( string len -- )`
+- `0x02` - Dump: `( -- )`

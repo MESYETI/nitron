@@ -134,6 +134,24 @@ INST(WReg) {
 	vm->reg[vm->dsp[1] % 8]  = vm->dsp[0];
 }
 
+INST(Read8) {
+	vm->dsp[-1] = *((uint8_t*) vm->dsp[-1]);
+}
+
+INST(Write8) {
+	vm->dsp -= 2;
+	*((uint8_t*) vm->dsp[1]) = vm->dsp[0];
+}
+
+INST(Read16) {
+	vm->dsp[-1] = *((uint16_t*) vm->dsp[-1]);
+}
+
+INST(Write16) {
+	vm->dsp -= 2;
+	*((uint16_t*) vm->dsp[1]) = vm->dsp[0];
+}
+
 void VM_Init(VM* vm) {
 	vm->area   = SafeMalloc(1048576);
 	vm->ip     = 0;
@@ -167,6 +185,10 @@ void VM_Init(VM* vm) {
 	vm->insts[0x12] = &Inst_ECall;
 	vm->insts[0x13] = &Inst_Reg;
 	vm->insts[0x14] = &Inst_WReg;
+	vm->insts[0x15] = &Inst_Read8;
+	vm->insts[0x16] = &Inst_Write8;
+	vm->insts[0x17] = &Inst_Read16;
+	vm->insts[0x18] = &Inst_Write16;
 }
 
 void VM_Free(VM* vm) {
