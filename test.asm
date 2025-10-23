@@ -1,3 +1,3 @@
-#00000041 ECALLi 00000000
-#0000000a ECALLi 00000000
-HALT
+define foobar 10
+
+foobar foobar foobar

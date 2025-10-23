@@ -36,6 +36,7 @@ struct VM{
 	uint32_t* rStack;
 	uint32_t* dsp;
 	uint32_t* rsp;
+	uint32_t  reg[8];
 
 	void (*insts[128])(VM*);
 	void (*calls[256])(VM*);

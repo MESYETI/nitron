@@ -28,6 +28,8 @@ Instructions have this format:
 - `0x10` - JNZ
 - `0x11` - HALT
 - `0x12` - ECALL
+- `0x13` - REG
+- `0x14` - WREG
 
 ## System calls
 - `0x00` - Print character: `( ch -- )`

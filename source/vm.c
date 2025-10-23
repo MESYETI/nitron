@@ -125,6 +125,15 @@ INST(ECall) {
 	vm->calls[*vm->dsp](vm);
 }
 
+INST(Reg) {
+	vm->dsp[-1] = vm->reg[vm->dsp[-1] % 8];
+}
+
+INST(WReg) {
+	vm->dsp                 -= 2;
+	vm->reg[vm->dsp[1] % 8]  = vm->dsp[0];
+}
+
 void VM_Init(VM* vm) {
 	vm->area   = SafeMalloc(1048576);
 	vm->ip     = 0;
@@ -156,6 +165,8 @@ void VM_Init(VM* vm) {
 	vm->insts[0x10] = &Inst_Jnz;
 	vm->insts[0x11] = &Inst_Halt;
 	vm->insts[0x12] = &Inst_ECall;
+	vm->insts[0x13] = &Inst_Reg;
+	vm->insts[0x14] = &Inst_WReg;
 }
 
 void VM_Free(VM* vm) {

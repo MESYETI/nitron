@@ -46,6 +46,18 @@ uint8_t* Assemble(const char* code, size_t* size, VM* vm) {
 		retLen += N; \
 		EXTEND();
 
+	#define NEXT_TOKEN() do { \
+		size_t len = strcspn(code, " \t\n"); \
+		if (len > 255) { \
+			fprintf(stderr, "Token too long\n"); \
+			exit(1); \
+		} \
+ \
+		strncpy(token, code, len); \
+		token[len] = 0; \
+		code += len + 1; \
+	} while(0);
+
 	while (code[0] != 0) {
 		// special tokens
 		switch (code[0]) {
@@ -61,22 +73,27 @@ uint8_t* Assemble(const char* code, size_t* size, VM* vm) {
 				++ code;
 				continue;
 			}
+			case '$': {
+				++ code;
+				NEXT_TOKEN();
+
+				if (strcmp(token, "data") == 0) {
+					data = true;
+				}
+				else if (strcmp(token, "code") == 0) {
+					data = false;
+				}
+				else {
+					fprintf(stderr, "Unknown mode '%s'", token);
+					exit(1);
+				}
+				break;
+			}
 			case '@': {
 				++ code;
-
-				size_t len = strcspn(code, " \t\n");
-				if (len > 255) {
-					fprintf(stderr, "Label too long\n");
-					return NULL;
-				}
-
-				strncpy(token, code, len);
-				token[len] = 0;
-				code += len;
+				NEXT_TOKEN();
 
 				values = SafeRealloc(values, valueLen + 1);
-
-				printf("Adding label '%s'\n", token);
 
 				if (data) {
 					values[valueLen] = (Value) {NewString(token), 4, (uint32_t) dataIdx};
@@ -103,7 +120,7 @@ uint8_t* Assemble(const char* code, size_t* size, VM* vm) {
 
 		strncpy(token, code, len);
 		token[len] = 0;
-		code += len;
+		code += len + 1;
 
 		if (strspn(token, "0123456789abcdef") == len) {
 			// this is an integer
@@ -140,6 +157,29 @@ uint8_t* Assemble(const char* code, size_t* size, VM* vm) {
 					exit(1);
 				}
 			}
+		}
+		else if (strcmp(token, "define") == 0) {
+			NEXT_TOKEN();
+
+			Value value;
+			value.name = NewString(token);
+
+			NEXT_TOKEN();
+
+			switch (strlen(token)) {
+				case 2: value.size = 1; break;
+				case 4: value.size = 2; break;
+				case 8: value.size = 4; break;
+				default: {
+					fprintf(stderr, "Invalid integer length: %d nibbles\n", (int) len);
+					exit(1);
+				}
+			}
+
+			value.value      = strtol(token, NULL, 16);
+			values           = SafeRealloc(values, valueLen + 1);
+			values[valueLen] = value;
+			++ valueLen;
 		}
 		else {
 			// probably an instruction
