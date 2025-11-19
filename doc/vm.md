@@ -54,6 +54,7 @@ This section has some space for user defined calls
 - `0x01` - Print string: `( string len -- )`
 - `0x02` - Print hex: `( num -- )`
 - `0x03` - Input char: `( -- ch )`
+- `0x04` - Print null terminated string `( string -- )`
 
 ### Section `0x0002` - Memory
 - `0x00` - Alloc: `( size -- ptr )`

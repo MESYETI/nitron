@@ -27,6 +27,11 @@ static void InputChar(VM* vm) {
 	vm->dsp[-1] = getchar();
 }
 
+static void PrintNTStr(VM* vm) {
+	-- vm->dsp;
+	fputs((char*) (*vm->dsp), stdout);
+}
+
 static void Alloc(VM* vm) {
 	vm->dsp[-1] = (uint32_t) SafeMalloc(vm->dsp[-1]);
 }
@@ -69,7 +74,8 @@ void Calls_InitVMCalls(VM* vm) {
 		/* 0x00 */ &PrintCh,
 		/* 0x01 */ &PrintStr,
 		/* 0x02 */ &PrintHex,
-		/* 0x03 */ &InputChar
+		/* 0x03 */ &InputChar,
+		/* 0x04 */ &PrintNTStr
 	};
 	ADD_SECTION(0x0001, sect0001);
 
