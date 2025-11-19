@@ -86,6 +86,7 @@ INST(Jump) {
 
 	if (*vm->dsp >= vm->codeSize) {
 		fprintf(stderr, "Invalid jump: %.8X\n", *vm->dsp);
+		exit(1);
 	}
 
 	vm->ip = &vm->code[*vm->dsp];
@@ -112,17 +113,19 @@ INST(Halt) {
 INST(ECall) {
 	-- vm->dsp;
 
-	if (*vm->dsp > 255) {
-		fprintf(stderr, "Invalid call %.8X\n", *vm->dsp);
+	uint32_t sect = (*vm->dsp & 0xFFFF0000) >> 16;
+	uint32_t call =  *vm->dsp & 0x0000FFFF;
+
+	if (sect >= VM_ECALL_SECTIONS) {
+		fprintf(stderr, "Invalid e-call section: %.4X\n", sect);
+		exit(1);
+	}
+	if (call >= vm->sections[sect].amount) {
+		fprintf(stderr, "Invalid e-call: %.4X\n", sect);
 		exit(1);
 	}
 
-	if (vm->calls[*vm->dsp] == NULL) { // TODO: merge
-		fprintf(stderr, "Invalid call %.8X\n", *vm->dsp);
-		exit(1);
-	}
-
-	vm->calls[*vm->dsp](vm);
+	vm->sections[sect].calls[call](vm);
 }
 
 INST(Reg) {

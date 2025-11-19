@@ -127,6 +127,24 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 	} while(0)
 
 	while (this->code[0] != 0) {
+		while (CharMatch(this->code[0], " \t\n")) {
+			++ this->code;
+		}
+
+		// special tokens
+		if (this->code[0] == '#') {
+			if (this->data) {
+				fprintf(stderr, "'#' can only be used in code mode\n");
+				return false;
+			}
+
+			ASSERT_BIN_SPACE(1);
+			*this->binPtr = 0x80; // NOPi = Push
+			++ this->binPtr;
+			++ this->code;
+			continue;
+		}
+
 		NextToken(this);
 
 		if (strcmp(this->token, "") == 0) {
@@ -146,17 +164,6 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 			}
 			case ':': {
 				// TODO
-				break;
-			}
-			case '#': {
-				if (this->data) {
-					fprintf(stderr, "'#' can only be used in code mode\n");
-					return false;
-				}
-
-				ASSERT_BIN_SPACE(1);
-				*this->binPtr = 0x80; // NOPi = Push
-				++ this->binPtr;
 				break;
 			}
 			case '$': {
@@ -184,7 +191,7 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 						return false;
 					}
 
-					this->values[this->valuesLen].value = this->dataPtr - this->vm->area;
+					this->values[this->valuesLen].value = (uint32_t) this->dataPtr;
 				}
 				else {
 					this->values[this->valuesLen].value = this->binPtr - this->bin;
@@ -197,8 +204,8 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 				ASSERT_BIN_SPACE(strlen(this->token) - 1);
 
 				uint8_t** dest = this->data? &this->dataPtr : &this->binPtr;
-				memcpy(*dest, &this->token[1], strlen(this->token - 1));
-				*dest += strlen(this->token - 1);
+				memcpy(*dest, &this->token[1], strlen(this->token) - 1);
+				*dest += strlen(this->token) - 1;
 				continue;
 			}
 			default: break;
@@ -219,14 +226,14 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 					ASSERT_BIN_SPACE(2);
 
 					*((uint16_t*) *dest) = (uint16_t) strtol(this->token, NULL, 16);
-					** dest += 2;
+					*dest += 2;
 					break;
 				}
 				case 8: { // word
 					ASSERT_BIN_SPACE(4);
 
 					*((uint32_t*) *dest) = (uint32_t) strtol(this->token, NULL, 16);
-					**dest += 4;
+					*dest += 4;
 					break;
 				}
 				default: {

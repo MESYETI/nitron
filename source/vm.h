@@ -43,12 +43,24 @@ enum {
 	VM_INST_NOT     = 0x2A
 };
 
-#define VM_AREA_SIZE   1048576
-#define VM_CODE_SIZE   1048576
-#define VM_DSTACK_SIZE 4096
-#define VM_RSTACK_SIZE 65536
+// configurable
+#define VM_AREA_SIZE         1048576
+#define VM_CODE_SIZE         1048576
+#define VM_DSTACK_SIZE       4096
+#define VM_RSTACK_SIZE       65536
+#define VM_USER_CALLS_AMOUNT 512
+
+// not configurable
+#define VM_ECALL_SECTIONS 4
 
 typedef struct VM VM;
+
+typedef void (*ECall)(VM*);
+
+typedef struct {
+	size_t amount;
+	ECall* calls;
+} ECallSect;
 
 struct VM {
 	uint8_t*  area;
@@ -61,9 +73,9 @@ struct VM {
 	uint32_t* dsp;
 	uint32_t* rsp;
 	uint32_t  reg[8];
+	ECallSect sections[VM_ECALL_SECTIONS];
 
 	void (*insts[128])(VM*);
-	void (*calls[256])(VM*);
 };
 
 void VM_Init(VM* vm);

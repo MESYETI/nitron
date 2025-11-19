@@ -44,11 +44,22 @@ Instructions have this format:
 - `0x26` - NEG
 
 ## System calls
+The higher 16 bits is the section, the lower 16 bits is the call.
+
+### Section `0x0000` - User calls
+This section has some space for user defined calls
+
+### Section `0x0001` - IO
 - `0x00` - Print character: `( ch -- )`
 - `0x01` - Print string: `( string len -- )`
-- `0x02` - Dump: `( -- )`
-- `0x03` - Alloc: `( size -- ptr )`
-- `0x04` - Realloc `( ptr size -- ptr )`
-- `0x05` - Free `( ptr -- )`
-- `0x06` - Print hex: `( num -- )`
-- `0x07` - Input char: `( -- ch )`
+- `0x02` - Print hex: `( num -- )`
+- `0x03` - Input char: `( -- ch )`
+
+### Section `0x0002` - Memory
+- `0x00` - Alloc: `( size -- ptr )`
+- `0x01` - Realloc `( ptr size -- ptr )`
+- `0x02` - Free `( ptr -- )`
+
+### Section `0x0003` - VM
+- `0x00` - Dump: `( -- )`
+- `0x01` - Get user calls amount `( -- size )`
