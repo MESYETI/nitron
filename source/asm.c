@@ -5,318 +5,307 @@
 #include "mem.h"
 #include "util.h"
 
-typedef struct {
-	const char* name;
-	uint8_t     opc;
-} InstDef;
+void Assembler_Init(Assembler* this, const char* code, VM* vm) {
+	this->code          = code;
+	this->vm            = vm;
+	this->values        = NULL;
+	this->valuesLen     = 0;
+	this->macros        = NULL;
+	this->macrosLen     = 0;
+	this->bin           = vm->code;
+	this->binLen        = vm->codeSize;
+	this->incomplete    = NULL;
+	this->incompleteLen = 0;
+}
 
-typedef struct {
-	const char* name;
-	uint8_t     size;
-	uint32_t    value;
-} Value;
-
-typedef struct {
-	const char* name;
-	uint32_t*   ptr;
-} IncompValue;
-
-typedef struct {
-	char* name;
-	char* contents;
-} Macro;
-
-static Value* values;
-static size_t valueLen;
-
-static Macro* macros;
-static size_t macroLen;
-
-uint8_t* Assemble(const char* code, size_t* size, VM* vm, bool init) {
-	char     token[256];
-	uint8_t* ret    = SafeMalloc(256);
-	size_t   retLen = 0;
-	size_t   retCap = 256;
-
-	if (init) {
-		values   = NULL;
-		valueLen = 0;
-
-		macros   = NULL;
-		macroLen = 0;
+void Assembler_Free(Assembler* this) {
+	for (size_t i = 0; i < this->valuesLen; ++ i) {
+		free(this->values[i].name);
+	}
+	if (this->values != NULL) {
+		free(this->values);
 	}
 
-	IncompValue* incomplete    = NULL;
-	size_t       incompleteLen = 0;
+	for (size_t i = 0; i < this->macrosLen; ++ i) {
+		free(this->macros[i].name);
+		free(this->macros[i].contents);
+	}
+	if (this->macros != NULL) {
+		free(this->macros);
+	}
+}
 
-	bool     data    = false; // true if creating data, false if creating code
-	uint8_t* dataIdx = vm? vm->area : NULL;
+static bool CharMatch(char ch, const char* match) {
+	while (*match) {
+		if (ch == *match) return true;
+		++ match;
+	}
 
-	#define EXTEND() \
-		while (retLen >= retCap) { \
-			retCap += 256; \
-			ret     = SafeRealloc(ret, retCap); \
+	return false;
+}
+
+static void NextToken(Assembler* this) {
+	this->token[0] = 0;
+
+	// skip empty tokens
+	while (true) {
+		if (*this->code == 0) {
+			this->token[0] = 0;
+			return;
 		}
 
-	#define EXTEND_BY(N) \
-		retLen += N; \
-		EXTEND();
+		if (CharMatch(this->code[0], " \t\n")) {
+			++ this->code;
+			continue;
+		}
+		else {
+			break;
+		}
+	}
 
-	#define NEXT_TOKEN() do { \
-		size_t len = strcspn(code, " \t\n"); \
-		if (len > 255) { \
-			fprintf(stderr, "Token too long\n"); \
-			exit(1); \
+	size_t len = strcspn(this->code, " \t\n");
+	strncpy(this->token, this->code, len);
+	this->token[len]  = 0;
+	this->code       += len;
+}
+
+bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
+	if (init) {
+		this->binPtr  = this->bin;
+		this->dataPtr = this->vm->area;
+		this->data    = false;
+	}
+
+	static const InstDef insts[] = {
+		{"NOP",     0x00}, {"NOPi",     0x80},
+		{"ADD",     0x01}, {"ADDi",     0x81},
+		{"SUB",     0x02}, {"SUBi",     0x82},
+		{"MUL",     0x03}, {"MULi",     0x83},
+		{"DIV",     0x04}, {"DIVi",     0x84},
+		{"MOD",     0x05}, {"MODi",     0x85},
+		{"R2D",     0x06}, {"R2Di",     0x86},
+		{"D2R",     0x07}, {"D2Ri",     0x87},
+		{"DUP",     0x08}, {"DUPi",     0x88},
+		{"OVER",    0x09}, {"OVERi",    0x89},
+		{"DROP",    0x0A}, {"DROPi",    0x8A},
+		{"ROT",     0x0B}, {"ROTi",     0x8B},
+		{"AREA",    0x0C}, {"AREAi",    0x8C},
+		{"READ",    0x0D}, {"READi",    0x8D},
+		{"WRITE",   0x0E}, {"WRITEi",   0x8E},
+		{"JUMP",    0x0F}, {"JUMPi",    0x8F},
+		{"JNZ",     0x10}, {"JNZi",     0x90},
+		{"HALT",    0x11}, {"HALTi",    0x91},
+		{"ECALL",   0x12}, {"ECALLi",   0x92},
+		{"REG",     0x13}, {"REGi",     0x93},
+		{"WREG",    0x14}, {"WREGi",    0x94},
+		{"READ8",   0x15}, {"READ8i",   0x95},
+		{"WRITE8",  0x16}, {"WRITE8i",  0x96},
+		{"READ16",  0x17}, {"READ16i",  0x97},
+		{"WRITE16", 0x18}, {"WRITE16i", 0x98},
+		{"JZ",      0x19}, {"JZi",      0x99},
+		{"DIVMOD",  0x20}, {"DIVMODi",  0xA0},
+		{"EQU",     0x21}, {"EQUi",     0xA1},
+		{"LESS",    0x22}, {"LESSi",    0xA2},
+		{"GREATER", 0x23}, {"GREATERi", 0xA3},
+		{"LE",      0x24}, {"LEi",      0xA4},
+		{"GE",      0x25}, {"GEi",      0xA5},
+		{"NEG",     0x26}, {"NEGi",     0xA6},
+		{"AND",     0x27}, {"ANDi",     0xA7},
+		{"XOR",     0x28}, {"XORi",     0xA8},
+		{"OR",      0x29}, {"ORi",      0xA9},
+		{"NOT",     0x2A}, {"NOTi",     0xAA}
+	};
+
+	#define ASSERT_BIN_SPACE(SIZE) do { \
+		if ( \
+			(!this->data && ((this->binPtr - this->bin) + ((size_t) (SIZE)) > this->binLen)) || \
+			(this->data  && ((this->dataPtr - this->vm->area) + ((size_t) (SIZE)) > this->vm->areaSize)) \
+		) { \
+			fprintf(stderr, "Not enough room for binary\n"); \
+			return false; \
 		} \
- \
-		strncpy(token, code, len); \
-		token[len] = 0; \
-		code += len + 1; \
-	} while(0);
+	} while(0)
 
-	while (code[0] != 0) {
-		// special tokens
-		switch (code[0]) {
+	while (this->code[0] != 0) {
+		NextToken(this);
+
+		if (strcmp(this->token, "") == 0) {
+			continue;
+		}
+
+		size_t len = strlen(this->token);
+
+		// token types
+		switch (this->token[0]) {
 			case ';': {
-				while ((code[0] != '\n') && (code[0] != 0)) ++ code;
+				while ((this->code[0] != '\n') && (this->code[0] != 0)) {
+					++ this->code;
+				}
+
 				continue;
 			}
 			case ':': {
-				++ code;
-				NEXT_TOKEN();
-
-				Macro macro;
-				macro.name = NewString(token);
-
-				size_t contentsLen = strcspn(code, ":");
-				macro.contents     = SafeMalloc(contentsLen + 1);
-
-				strncpy(macro.contents, code, contentsLen);
-
-				macro.contents[contentsLen] = 0;
-				code += contentsLen + 1;
-
-				macros           = SafeRealloc(macros, macroLen + 1);
-				macros[macroLen] = macro;
-				++ macroLen;
-				continue;
-			}
-			case '#': {
-				if (data) {
-					fprintf(stderr, "# can only be used in code mode\n");
-					exit(1);
-				}
-
-				++ retLen;
-				EXTEND();
-				ret[retLen - 1] = 0x80; // NOPi, push
-				++ code;
-				continue;
-			}
-			case '$': {
-				++ code;
-				NEXT_TOKEN();
-
-				if (strcmp(token, "data") == 0) {
-					data = true;
-
-					if (!vm) {
-						fprintf(stderr, "Can't use data mode here\n");
-						exit(1);
-					}
-				}
-				else if (strcmp(token, "code") == 0) {
-					data = false;
-				}
-				else {
-					fprintf(stderr, "Unknown mode '%s'", token);
-					exit(1);
-				}
+				// TODO
 				break;
 			}
-			case '@': {
-				++ code;
-				NEXT_TOKEN();
+			case '#': {
+				if (this->data) {
+					fprintf(stderr, "'#' can only be used in code mode\n");
+					return false;
+				}
 
-				values = SafeRealloc(values, valueLen + 1);
-
-				if (data) {
-					if (!vm) {
-						fprintf(stderr, "Can't use data mode here\n");
-						exit(1);
-					}
-
-					values[valueLen] = (Value) {NewString(token), 4, (uint32_t) dataIdx};
+				ASSERT_BIN_SPACE(1);
+				*this->binPtr = 0x80; // NOPi = Push
+				++ this->binPtr;
+				break;
+			}
+			case '$': {
+				if (strcmp(this->token, "$code") == 0) {
+					this->data = false;
+				}
+				else if (strcmp(this->token, "$data") == 0) {
+					this->data = true;
 				}
 				else {
-					values[valueLen] = (Value) {NewString(token), 4, (uint32_t) retLen};
+					fprintf(stderr, "Unknown mode '%s'\n", &this->token[1]);
+					return false;
 				}
-				++ valueLen;
+				continue;
+			}
+			case '@': {
+				this->values = SafeRealloc(this->values, this->valuesLen + 1);
+
+				strcpy(this->values[this->valuesLen].name, &this->token[1]);
+				this->values[this->valuesLen].size  = 4;
+
+				if (this->data) {
+					if (!this->vm) {
+						fprintf(stderr, "Cannot allocate data without a VM\n");
+						return false;
+					}
+
+					this->values[this->valuesLen].value = this->dataPtr - this->vm->area;
+				}
+				else {
+					this->values[this->valuesLen].value = this->binPtr - this->bin;
+				}
+
+				++ this->valuesLen;
+				continue;
+			}
+			case '"': {
+				ASSERT_BIN_SPACE(strlen(this->token) - 1);
+
+				uint8_t** dest = this->data? &this->dataPtr : &this->binPtr;
+				memcpy(*dest, &this->token[1], strlen(this->token - 1));
+				*dest += strlen(this->token - 1);
 				continue;
 			}
 			default: break;
 		}
 
-		size_t len = strcspn(code, " \t\n");
+		if (strspn(this->token, "0123456789abcdef") == len) {
+			uint8_t** dest = this->data? &this->dataPtr : &this->binPtr;
 
-		if (len == 0) {
-			++ code;
-			continue;
-		}
-		if (len > 255) {
-			fprintf(stderr, "Token in file too big\n");
-			return NULL;
-		}
-
-		strncpy(token, code, len);
-		token[len] = 0;
-		code += len + 1;
-
-		if (token[0] == '"') {
-			EXTEND_BY(len - 1);
-
-			uint8_t* write = data? dataIdx : &ret[retLen - len + 1];
-			memcpy(write, &token[1], len - 1);;
-		}
-		else if (strspn(token, "0123456789abcdef") == len) {
-			// this is an integer
 			switch (len) {
 				case 2: { // byte
-					if (!data) EXTEND_BY(1);
+					ASSERT_BIN_SPACE(1);
 
-					uint8_t* write = data? dataIdx : &ret[retLen - 1];
-					*write         = (uint8_t) strtol(token, NULL, 16);
-
-					if (data) dataIdx += 1;
+					*((uint8_t*) *dest) = (uint8_t) strtol(this->token, NULL, 16);
+					++ *dest;
 					break;
 				}
 				case 4: { // short
-					if (!data) EXTEND_BY(2);
+					ASSERT_BIN_SPACE(2);
 
-					uint8_t* write       = data? dataIdx : &ret[retLen - 2];
-					*((uint16_t*) write) = (uint16_t) strtol(token, NULL, 16);
-
-					if (data) dataIdx += 2;
+					*((uint16_t*) *dest) = (uint16_t) strtol(this->token, NULL, 16);
+					** dest += 2;
 					break;
 				}
 				case 8: { // word
-					if (!data) EXTEND_BY(4);
+					ASSERT_BIN_SPACE(4);
 
-					uint8_t* write       = data? dataIdx : &ret[retLen - 4];
-					*((uint32_t*) write) = (uint32_t) strtol(token, NULL, 16);
-
-					if (data) dataIdx += 4;
+					*((uint32_t*) *dest) = (uint32_t) strtol(this->token, NULL, 16);
+					**dest += 4;
 					break;
 				}
 				default: {
 					fprintf(stderr, "Invalid integer length: %d nibbles\n", (int) len);
+					fprintf(stderr, "    '%s'\n", this->token);
 					exit(1);
 				}
 			}
 		}
-		else if (strcmp(token, "define") == 0) {
-			NEXT_TOKEN();
+		else if (strcmp(this->token, "define") == 0) {
+			NextToken(this);
 
 			Value value;
-			value.name = NewString(token);
+			strcpy(value.name, this->token);
 
-			NEXT_TOKEN();
+			NextToken(this);
 
-			switch (strlen(token)) {
+			switch (strlen(this->token)) {
 				case 2: value.size = 1; break;
 				case 4: value.size = 2; break;
 				case 8: value.size = 4; break;
 				default: {
 					fprintf(stderr, "Invalid integer length: %d nibbles\n", (int) len);
+					fprintf(stderr, "    '%s'\n", this->token);
 					exit(1);
 				}
 			}
 
-			value.value      = strtol(token, NULL, 16);
-			values           = SafeRealloc(values, valueLen + 1);
-			values[valueLen] = value;
-			++ valueLen;
+			value.value  = strtol(this->token, NULL, 16);
+			this->values = SafeRealloc(this->values, this->valuesLen + 1);
+
+			this->values[this->valuesLen] = value;
+			++ this->valuesLen;
 		}
 		else {
-			// probably an instruction
-			uint8_t opcode;
 			bool    isInst = false;
-			InstDef insts[] = {
-				{"NOP",     0x00}, {"NOPi",     0x80},
-				{"ADD",     0x01}, {"ADDi",     0x81},
-				{"SUB",     0x02}, {"SUBi",     0x82},
-				{"MUL",     0x03}, {"MULi",     0x83},
-				{"DIV",     0x04}, {"DIVi",     0x84},
-				{"MOD",     0x05}, {"MODi",     0x85},
-				{"R2D",     0x06}, {"R2Di",     0x86},
-				{"D2R",     0x07}, {"D2Ri",     0x87},
-				{"DUP",     0x08}, {"DUPi",     0x88},
-				{"OVER",    0x09}, {"OVERi",    0x89},
-				{"DROP",    0x0A}, {"DROPi",    0x8A},
-				{"ROT",     0x0B}, {"ROTi",     0x8B},
-				{"AREA",    0x0C}, {"AREAi",    0x8C},
-				{"READ",    0x0D}, {"READi",    0x8D},
-				{"WRITE",   0x0E}, {"WRITEi",   0x8E},
-				{"JUMP",    0x0F}, {"JUMPi",    0x8F},
-				{"JNZ",     0x10}, {"JNZi",     0x90},
-				{"HALT",    0x11}, {"HALTi",    0x91},
-				{"ECALL",   0x12}, {"ECALLi",   0x92},
-				{"REG",     0x13}, {"REGi",     0x93},
-				{"WREG",    0x14}, {"WREGi",    0x94},
-				{"READ8",   0x15}, {"READ8i",   0x95},
-				{"WRITE8",  0x16}, {"WRITE8i",  0x96},
-				{"READ16",  0x17}, {"READ16i",  0x97},
-				{"WRITE16", 0x18}, {"WRITE16i", 0x98},
-				{"JZ",      0x19}, {"JZi",      0x99},
-				{"DIVMOD",  0x20}, {"DIVMODi",  0xA0},
-				{"EQU",     0x21}, {"EQUi",     0xA1},
-				{"LESS",    0x22}, {"LESSi",    0xA2},
-				{"GREATER", 0x23}, {"GREATERi", 0xA3},
-				{"LE",      0x24}, {"LEi",      0xA4},
-				{"GE",      0x25}, {"GEi",      0xA5},
-				{"NEG",     0x26}, {"NEGi",     0xA6},
-				{"AND",     0x27}, {"ANDi",     0xA7},
-				{"XOR",     0x28}, {"XORi",     0xA8},
-				{"OR",      0x29}, {"ORi",      0xA9},
-				{"NOT",     0x2A}, {"NOTi",     0xAA}
-			};
+			uint8_t opcode;
 
 			for (size_t i = 0; i < sizeof(insts) / sizeof(InstDef); ++ i) {
-				if (strcmp(insts[i].name, token) == 0) {
+				if (strcmp(insts[i].name, this->token) == 0) {
 					opcode = insts[i].opc;
 					isInst = true;
 				}
 			}
 
 			if (isInst) {
-				++ retLen;
-				EXTEND();
-				ret[retLen - 1] = opcode;
+				ASSERT_BIN_SPACE(1);
+				*this->binPtr = opcode;
+				++ this->binPtr;
 				continue;
 			}
 
 			bool isValue = false;
-			for (size_t i = 0; i < valueLen; ++ i) {
-				if (strcmp(values[i].name, token) == 0) {
+			for (size_t i = 0; i < this->valuesLen; ++ i) {
+				uint8_t** dest = this->data? &this->dataPtr : &this->binPtr;
+
+				if (strcmp(this->values[i].name, this->token) == 0) {
 					isValue = true;
 
-					switch (values[i].size) {
-						case 1: {
-							++ retLen;
-							EXTEND();
-							ret[retLen - 1] = (uint8_t) values[i].value;
+					switch (this->values[i].size) {
+						case 1: { // byte
+							ASSERT_BIN_SPACE(1);
+
+							*((uint8_t*) *dest) = (uint8_t) this->values[i].value;
+							++ *dest;
 							break;
 						}
-						case 2: {
-							retLen += 2;
-							EXTEND();
-							*((uint16_t*) &ret[retLen - 2]) = (uint16_t) values[i].value;
+						case 2: { // short
+							ASSERT_BIN_SPACE(2);
+
+							*((uint16_t*) *dest) = (uint16_t) this->values[i].value;
+							*dest += 2;
 							break;
 						}
-						case 4: {
-							retLen += 4;
-							EXTEND();
-							*((uint32_t*) &ret[retLen - 4]) = values[i].value;
+						case 4: { // word
+							ASSERT_BIN_SPACE(4);
+
+							*((uint32_t*) *dest) = this->values[i].value;
+							*dest += 4;
 							break;
 						}
 						default: assert(0);
@@ -327,65 +316,67 @@ uint8_t* Assemble(const char* code, size_t* size, VM* vm, bool init) {
 			if (isValue) continue;
 
 			bool isMacro = false;
-			for (size_t i = 0; i < macroLen; ++ i) {
-				if (strcmp(macros[i].name, token) == 0) {
+			for (size_t i = 0; i < this->macrosLen; ++ i) {
+				if (strcmp(this->macros[i].name, this->token) == 0) {
 					isMacro = true;
 
-					size_t   size;
-					uint8_t* rom = Assemble(macros[i].contents, &size, NULL, false);
-
-					retLen += size;
-					EXTEND();
-					memcpy(&ret[retLen - size], rom, size);
-					free(rom);
+					const char* oldCode = this->code;
+					this->code          = this->macros[i].contents;
+					Assembler_Assemble(this, false, NULL);
+					this->code = oldCode;
 				}
 			}
 
 			if (isMacro) continue;
 
-			if (data) {
-				fprintf(stderr, "Unknown identifier '%s'\n", token);
+			if (this->data) {
+				fprintf(stderr, "Unknown identifier '%s'\n", this->token);
 				exit(1);
 			}
 			else {
-				retLen += 4;
-				EXTEND();
+				ASSERT_BIN_SPACE(4);
 
-				incomplete = SafeRealloc(incomplete, incompleteLen + 1);
+				this->incomplete = SafeRealloc(this->incomplete, this->incompleteLen + 1);
 
-				incomplete[incompleteLen ++] = (IncompValue) {
-					NewString(token), (uint32_t*) &ret[retLen - 4]
-				};
+				strcpy(this->incomplete[this->incompleteLen].name, this->token);
+				this->incomplete[this->incompleteLen].ptr = (uint32_t*) this->binPtr;
+
+				this->binPtr += 4;
+
+				++ this->incompleteLen;
 			}
 		}
 	}
 
-	for (size_t i = 0; i < incompleteLen; ++ i) {
+	for (size_t i = 0; i < this->incompleteLen; ++ i) {
 		bool found = false;
 
-		for (size_t j = 0; j < valueLen; ++ j) {
-			if (strcmp(values[j].name, incomplete[i].name) == 0) {
+		for (size_t j = 0; j < this->valuesLen; ++ j) {
+			if (strcmp(this->values[j].name, this->incomplete[i].name) == 0) {
 				found = true;
 
-				if (values[j].size != 4) {
+				if (this->values[j].size != 4) {
 					fprintf(
 						stderr, "Incomplete value '%s' must be 4 bytes",
-						values[j].name
+						this->values[j].name
 					);
 					exit(1);
 				}
 
-				*incomplete[i].ptr = values[j].value;
+				*this->incomplete[i].ptr = this->values[j].value;
 				break;
 			}
 		}
 
 		if (!found) {
-			fprintf(stderr, "Couldn't find value '%s'\n", incomplete[i].name);
+			fprintf(stderr, "Couldn't find value '%s'\n", this->incomplete[i].name);
 			exit(1);
 		}
 	}
 
-	*size = retLen;
-	return ret;
+	if (size) {
+		*size = this->binPtr - this->bin;
+	}
+
+	return true;
 }

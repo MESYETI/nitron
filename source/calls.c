@@ -48,6 +48,11 @@ static void PrintHex(VM* vm) {
 	printf("%.8X", *vm->dsp);
 }
 
+static void InputChar(VM* vm) {
+	++ vm->dsp;
+	vm->dsp[-1] = getchar();
+}
+
 void Calls_InitVMCalls(VM* vm) {
 	vm->calls[0] = &PrintCh;
 	vm->calls[1] = &PrintStr;
@@ -56,4 +61,5 @@ void Calls_InitVMCalls(VM* vm) {
 	vm->calls[4] = &Realloc;
 	vm->calls[5] = &Free;
 	vm->calls[6] = &PrintHex;
+	vm->calls[7] = &InputChar;
 }

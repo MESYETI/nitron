@@ -43,10 +43,16 @@ enum {
 	VM_INST_NOT     = 0x2A
 };
 
+#define VM_AREA_SIZE   1048576
+#define VM_CODE_SIZE   1048576
+#define VM_DSTACK_SIZE 4096
+#define VM_RSTACK_SIZE 65536
+
 typedef struct VM VM;
 
-struct VM{
+struct VM {
 	uint8_t*  area;
+	size_t    areaSize;
 	uint8_t*  ip;
 	uint8_t*  code;
 	size_t    codeSize;
@@ -62,7 +68,6 @@ struct VM{
 
 void VM_Init(VM* vm);
 void VM_Free(VM* vm);
-void VM_Load(VM* vm, uint8_t* program, size_t size);
 void VM_Run(VM* vm);
 
 #endif

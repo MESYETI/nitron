@@ -51,3 +51,4 @@ Instructions have this format:
 - `0x04` - Realloc `( ptr size -- ptr )`
 - `0x05` - Free `( ptr -- )`
 - `0x06` - Print hex: `( num -- )`
+- `0x07` - Input char: `( -- ch )`

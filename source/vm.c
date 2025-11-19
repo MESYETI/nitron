@@ -230,13 +230,21 @@ INST(Not) {
 	vm->dsp[-1] = ~vm->dsp[-1];
 }
 
+static uint8_t  area[VM_AREA_SIZE];
+static uint8_t  code[VM_CODE_SIZE];
+static uint32_t dStack[VM_DSTACK_SIZE];
+static uint32_t rStack[VM_RSTACK_SIZE];
+
 void VM_Init(VM* vm) {
-	vm->area   = SafeMalloc(1048576);
-	vm->ip     = 0;
-	vm->dStack = SafeMalloc(4096);
-	vm->rStack = SafeMalloc(4096);
-	vm->dsp    = vm->dStack;
-	vm->rsp    = vm->rStack;
+	vm->area     = area;
+	vm->areaSize = VM_AREA_SIZE;
+	vm->ip       = 0;
+	vm->code     = code;
+	vm->codeSize = VM_CODE_SIZE;
+	vm->dStack   = dStack;
+	vm->rStack   = rStack;
+	vm->dsp      = vm->dStack;
+	vm->rsp      = vm->rStack;
 
 	for (size_t i = 0; i < sizeof(vm->insts) / sizeof(void*); ++ i) {
 		vm->insts[i] = NULL;
@@ -285,13 +293,9 @@ void VM_Free(VM* vm) {
 	free(vm->area);
 }
 
-void VM_Load(VM* vm, uint8_t* program, size_t size) {
-	vm->code     = program;
-	vm->codeSize = size;
-	vm->ip       = program;
-}
-
 void VM_Run(VM* vm) {
+	vm->ip = vm->code;
+
 	while (true) {
 		uint8_t inst = *vm->ip;
 		++ vm->ip;

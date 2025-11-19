@@ -1,5 +1,3 @@
-$data
-	foo
-
 $code
-	@foo
+	start
+	@start

@@ -22,7 +22,7 @@ define REG_THIS_WORD 00000001
 ; NEXT macro
 $code
 	:NEXT
-		REGi REG_INST_PTR DUP ADDi 00000004 WREGi REG_INST_PTR READ
+		REGi REG_INST_PTR DUP ADDi %w 4 WREGi REG_INST_PTR READ
 		DUP WREGi REG_THIS_WORD ; save codeword address
 		READ JUMP :
 
@@ -34,32 +34,26 @@ $code
 		quit
 	@do-col
 		REGi REG_INST_PTR D2R
-		REGi REG_THIS_WORD ADDi 00000004 DUP WREGi REG_THIS_WORD
+		REGi REG_THIS_WORD ADDi %w 4 DUP WREGi REG_THIS_WORD
 		WREGi REG_INST_PTR
 		NEXT
-	@drop-def ; ( n -- )
-		POP NEXT
-	@swap-def ; ( a b -- b a )
-		SWAP NEXT
-	@dup-def ; ( a -- a a )
-		DUP NEXT
-	@over-def ; ( a b -- a b a )
-		OVER NEXT
-	@rot-def
-		ROT NEXT
+	@drop-def POP NEXT
+	@swap-def SWAP NEXT
+	@dup-def DUP NEXT
+	@over-def OVER NEXT
+	@rot-def ROT NEXT
 	@-rot-def HALT ; TODO
-	@2drop-def
-		DROP DROP NEXT
+	@2drop-def DROP DROP NEXT
 	@2dup HALT ; TODO
 	@2swap HALT ; TODO
 	@?dup-def
 		DUP JZi ?dup-def/1
 			DUP
 		@?dup-def/1 NEXT
-	@1+-def     ADDi 00000001 NEXT
-	@1--def     SUBi 00000001 NEXT
-	@4+-def     ADDi 00000004 NEXT
-	@4--def     SUBi 00000004 NEXT
+	@1+-def     ADDi %w 1 NEXT
+	@1--def     SUBi %w 1 NEXT
+	@4+-def     ADDi %w 4 NEXT
+	@4--def     SUBi %w 4 NEXT
 	@+-def      ADD NEXT
 	@--def      SUB NEXT
 	@*-def      MUL NEXT
@@ -70,12 +64,12 @@ $code
 	@>-def      GREATER NEXT
 	@<=-def     LE NEXT
 	@>=-def     GE NEXT
-	@0=-def     00000000 EQU NEXT
-	@0/=-def    00000000 EQU NEG NEXT
-	@0<-def     00000000 LESS NEXT
-	@0>-def     00000000 GREATER NEXT
-	@0<=-def    00000000 LE NEXT
-	@0>=-def    00000000 GE NEXT
+	@0=-def     %w 0 EQU NEXT
+	@0/=-def    %w 0 EQU NEG NEXT
+	@0<-def     %w 0 LESS NEXT
+	@0>-def     %w 0 GREATER NEXT
+	@0<=-def    %w 0 LE NEXT
+	@0>=-def    %w 0 GE NEXT
 	@and-def    AND NEXT
 	@or-def     OR NEXT
 	@xor-def    XOR NEXT

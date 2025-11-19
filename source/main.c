@@ -36,16 +36,19 @@ int main(int argc, char** argv) {
 	size_t size;
 	char*  file = ReadFile(path, &size);
 
-	uint8_t* rom = Assemble(file, &size, &vm, true);
+	Assembler assembler;
+	Assembler_Init(&assembler, file, &vm);
+	Assembler_Assemble(&assembler, true, &vm.codeSize);
+	free(file);
 
 	if (dumpRom) {
-		for (size_t i = 0; i < size; ++ i) {
-			printf("%.8X: %.2X (%c)\n", i, rom[i], rom[i]);
+		printf("ROM is %d bytes\n", vm.codeSize);
+		for (size_t i = 0; i < vm.codeSize; ++ i) {
+			printf("%.8X: %.2X (%c)\n", i, vm.code[i], vm.code[i]);
 		}
 
 		return 0;
 	}
-	VM_Load(&vm, rom, size);
 	VM_Run(&vm);
 	return 0;
 }
