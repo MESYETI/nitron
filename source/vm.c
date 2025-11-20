@@ -69,7 +69,7 @@ INST(Rot) {
 }
 
 INST(Area) {
-	vm->dsp[-1] += (uint32_t) &vm->area;
+	vm->dsp[-1] += vm->reg[8];;
 }
 
 INST(Read) {
@@ -267,6 +267,7 @@ static uint32_t rStack[VM_RSTACK_SIZE];
 
 void VM_Init(VM* vm) {
 	vm->area     = area;
+	vm->areaPtr  = area;
 	vm->areaSize = VM_AREA_SIZE;
 	vm->ip       = 0;
 	vm->code     = code;

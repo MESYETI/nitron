@@ -76,7 +76,7 @@ static void NextToken(Assembler* this) {
 bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 	if (init) {
 		this->binPtr  = this->bin;
-		this->dataPtr = this->vm->area;
+		this->dataPtr = this->vm->areaPtr;
 		this->data    = false;
 	}
 
@@ -416,6 +416,8 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 	if (size) {
 		*size = this->binPtr - this->bin;
 	}
+
+	this->vm->areaPtr = this->dataPtr;
 
 	return true;
 }

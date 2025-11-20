@@ -64,6 +64,7 @@ typedef struct {
 
 struct VM {
 	uint8_t*  area;
+	uint8_t*  areaPtr;
 	size_t    areaSize;
 	uint8_t*  ip;
 	uint8_t*  code;

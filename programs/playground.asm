@@ -11,6 +11,8 @@ $code
 	define Assemble   00040000
 
 	#initMsg ECALLi PrintNTStr
+	#initMsg ECALLi PrintHex
+	#0000000a ECALLi PrintChar
 
 	@loop
 		; read input

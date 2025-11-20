@@ -8,6 +8,17 @@ Instructions have this format:
 - `I` means the 32 bit word after the instruction is pushed before running the instruction
 - `O` is the opcode
 
+## Registers
+Registers:
+- 0 - General purpose
+- 1 - General purpose
+- 2 - General purpose
+- 3 - General purpose
+- 4 - General purpose
+- 5 - General purpose
+- 6 - General purpose
+- 7 - General purpose
+
 ## Instructions
 - `0x00` - NOP
 - `0x01` - ADD
