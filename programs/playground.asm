@@ -3,24 +3,27 @@ $data
 	@prompt "> " 00
 	@input reserve 256
 	@program reserve 1024
+	@assembler reserve 4
 $code
-	define PrintChar  00010000
-	define PrintHex   00010002
-	define PrintNTStr 00010004
-	define InputLine  00010005
-	define Assemble   00040000
+	define PrintChar     00010000
+	define PrintHex      00010002
+	define PrintNTStr    00010004
+	define InputLine     00010005
+	define Assemble      00040000
+	define NewAssembler  00040001
+	define FreeAssembler 00040002
+
+	; create assembler
+	ECALLi NewAssembler #assembler WRITE
 
 	#initMsg ECALLi PrintNTStr
-	#initMsg ECALLi PrintHex
-	#0000000a ECALLi PrintChar
-
 	@loop
 		; read input
 		#prompt ECALLi PrintNTStr
 		#input #00000100 ECALLi InputLine
 
 		; assemble it somewhere
-		#program #00000400 #input ECALLi Assemble
+		#program #00000400 #input #assembler READ ECALLi Assemble
 
 		; add RET instruction
 		ADDi program #0000002d SWAP WRITE8

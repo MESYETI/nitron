@@ -87,5 +87,7 @@ This section has some space for user defined calls
 - `0x02` - Run on new instance `( code codeSize areaSize stackSize areaPtr -- )`
 
 ### Section `0x0004` - Assembler
-- `0x00` - Assemble `( dest destSize source -- size )`
+- `0x00` - Assemble `( dest destSize source assembler* -- size )`
 	- Source must be null terminated
+- `0x01` - New assembler `( -- asm*)`
+- `0x02` - Free assembler `( asm* -- )`

@@ -104,6 +104,8 @@ static void RunNewInstance(VM* vm) {
 
 static void Assemble(VM* vm) {
 	-- vm->dsp;
+	Assembler* assembler = (Assembler*) *vm->dsp;
+	-- vm->dsp;
 	char* src = (char*) *vm->dsp;
 	-- vm->dsp;
 	size_t destSize = *vm->dsp;
@@ -112,14 +114,37 @@ static void Assemble(VM* vm) {
 
 	size_t size;
 
-	Assembler assembler;
-	Assembler_Init(&assembler, src, vm);
-	assembler.bin    = dest;
-	assembler.binLen = destSize;
-	Assembler_Assemble(&assembler, true, &size);
+	assembler->code   = src;
+	assembler->vm     = vm;
+	assembler->bin    = dest;
+	assembler->binLen = destSize;
+	Assembler_Assemble(assembler, true, &size);
 
 	*vm->dsp = (uint32_t) size;
 	++ vm->dsp;
+}
+
+static void NewAssembler(VM* vm) {
+	Assembler* assembler = malloc(sizeof(Assembler));
+
+	if (assembler == NULL) {
+		*vm->dsp = 0;
+		++ vm->dsp;
+		return;
+	}
+
+	Assembler_InitBasic(assembler);
+
+	*vm->dsp = (uint32_t) assembler;
+	++ vm->dsp;
+}
+
+static void FreeAssembler(VM* vm) {
+	-- vm->dsp;
+	Assembler* assembler = (Assembler*) *vm->dsp;
+
+	Assembler_Free(assembler);
+	free(assembler);
 }
 
 #define ADD_SECTION(INDEX, BUF) \
@@ -154,7 +179,9 @@ void Calls_InitVMCalls(VM* vm) {
 	ADD_SECTION(0x0003, sect0003);
 
 	static ECall sect0004[] = {
-		/* 0x00 */ &Assemble
+		/* 0x00 */ &Assemble,
+		/* 0x01 */ &NewAssembler,
+		/* 0x02 */ &FreeAssembler
 	};
 	ADD_SECTION(0x0004, sect0004);
 }
