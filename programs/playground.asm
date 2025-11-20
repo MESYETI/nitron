@@ -2,8 +2,10 @@ $data
 	@initMsg "Nitron Assembly Playground" 0a 00
 	@prompt "> " 00
 	@input reserve 256
-	@program reserve 1024
+	@program reserve 16384
 	@assembler reserve 4
+	@programPtr reserve 4
+	@oldProgramPtr reserve 4
 $code
 	define PrintChar     00010000
 	define PrintHex      00010002
@@ -13,8 +15,10 @@ $code
 	define NewAssembler  00040001
 	define FreeAssembler 00040002
 
+	#program WRITEi programPtr
+
 	; create assembler
-	ECALLi NewAssembler #assembler WRITE
+	#00000001 ECALLi NewAssembler #assembler WRITE
 
 	#initMsg ECALLi PrintNTStr
 	@loop
@@ -23,13 +27,19 @@ $code
 		#input #00000100 ECALLi InputLine
 
 		; assemble it somewhere
-		#program #00000400 #input #assembler READ ECALLi Assemble
+		#programPtr READ #00000400 #input #assembler READ ECALLi Assemble
+		DUP D2R ; save for advancing the program pointer
 
 		; add RET instruction
-		ADDi program #0000002d SWAP WRITE8
+		#programPtr READ ADD #0000002d SWAP WRITE8
+
+		; advance program pointer
+		R2D DUP
+		#programPtr READ WRITEi oldProgramPtr
+		#programPtr READ ADD #00000001 ADD WRITEi programPtr
 
 		; call user's code
-		FARCALLi program
+		#oldProgramPtr READ FARCALL
 
 		; loop again
 		JUMPi loop

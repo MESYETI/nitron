@@ -39,6 +39,11 @@ typedef struct {
 	IncompValue* incomplete;
 	size_t       incompleteLen;
 
+	// config
+	bool farLabels;
+		// false: code labels are indexed in code memory
+		// true:  code labels are memory addresses
+
 	// internal state
 	char     token[ASM_TOKEN_SIZE];
 	uint8_t* binPtr;

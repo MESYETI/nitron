@@ -12,6 +12,8 @@ void Assembler_InitBasic(Assembler* this) {
 	this->macrosLen     = 0;
 	this->incomplete    = NULL;
 	this->incompleteLen = 0;
+
+	this->farLabels = false;
 }
 
 void Assembler_Init(Assembler* this, const char* code, VM* vm) {
@@ -211,6 +213,9 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 					}
 
 					this->values[this->valuesLen].value = (uint32_t) this->dataPtr;
+				}
+				else if (this->farLabels) {
+					this->values[this->valuesLen].value = (uint32_t) this->binPtr;
 				}
 				else {
 					this->values[this->valuesLen].value = this->binPtr - this->bin;

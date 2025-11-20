@@ -89,5 +89,5 @@ This section has some space for user defined calls
 ### Section `0x0004` - Assembler
 - `0x00` - Assemble `( dest destSize source assembler* -- size )`
 	- Source must be null terminated
-- `0x01` - New assembler `( -- asm*)`
+- `0x01` - New assembler `( farLabels? -- asm*)`
 - `0x02` - Free assembler `( asm* -- )`

@@ -135,6 +135,9 @@ static void NewAssembler(VM* vm) {
 
 	Assembler_InitBasic(assembler);
 
+	-- vm->dsp;
+	assembler->farLabels = *vm->dsp == 0? false : true;
+
 	*vm->dsp = (uint32_t) assembler;
 	++ vm->dsp;
 }
