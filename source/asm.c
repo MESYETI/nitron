@@ -5,17 +5,21 @@
 #include "mem.h"
 #include "util.h"
 
-void Assembler_Init(Assembler* this, const char* code, VM* vm) {
-	this->code          = code;
-	this->vm            = vm;
+void Assembler_InitBasic(Assembler* this) {
 	this->values        = NULL;
 	this->valuesLen     = 0;
 	this->macros        = NULL;
 	this->macrosLen     = 0;
-	this->bin           = vm->code;
-	this->binLen        = vm->codeSize;
 	this->incomplete    = NULL;
 	this->incompleteLen = 0;
+}
+
+void Assembler_Init(Assembler* this, const char* code, VM* vm) {
+	Assembler_InitBasic(this);
+	this->code   = code;
+	this->vm     = vm;
+	this->bin    = vm->code;
+	this->binLen = vm->codeSize;
 }
 
 void Assembler_Free(Assembler* this) {
@@ -113,7 +117,11 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 		{"AND",     0x27}, {"ANDi",     0xA7},
 		{"XOR",     0x28}, {"XORi",     0xA8},
 		{"OR",      0x29}, {"ORi",      0xA9},
-		{"NOT",     0x2A}, {"NOTi",     0xAA}
+		{"NOT",     0x2A}, {"NOTi",     0xAA},
+		{"SWAP",    0x2B}, {"SWAPi",    0xAB},
+		{"CALL",    0x2C}, {"CALLi",    0xAC},
+		{"RET",     0x2D}, {"RETi",     0xAD},
+		{"FARCALL", 0x2E}, {"FARCALLi", 0xAE}
 	};
 
 	#define ASSERT_BIN_SPACE(SIZE) do { \
@@ -144,8 +152,17 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 			++ this->code;
 			continue;
 		}
+		else if (this->code[0] == '"') {
+			++ this->code;
+			size_t len = strcspn(this->code, "\"");
 
-		NextToken(this);
+			strncpy(this->token, this->code - 1, len + 1);
+			this->token[len + 1] = 0;
+			this->code += len + 1;
+		}
+		else {
+			NextToken(this);
+		}
 
 		if (strcmp(this->token, "") == 0) {
 			continue;
@@ -180,7 +197,9 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 				continue;
 			}
 			case '@': {
-				this->values = SafeRealloc(this->values, this->valuesLen + 1);
+				this->values = SafeRealloc(
+					this->values, (this->valuesLen + 1) * sizeof(Value)
+				);
 
 				strcpy(this->values[this->valuesLen].name, &this->token[1]);
 				this->values[this->valuesLen].size  = 4;
@@ -263,10 +282,21 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 			}
 
 			value.value  = strtol(this->token, NULL, 16);
-			this->values = SafeRealloc(this->values, this->valuesLen + 1);
+			this->values = SafeRealloc(
+				this->values, (this->valuesLen + 1) * sizeof(Value)
+			);
 
 			this->values[this->valuesLen] = value;
 			++ this->valuesLen;
+		}
+		else if (strcmp(this->token, "reserve") == 0) {
+			NextToken(this);
+			size_t size = strtol(this->token, NULL, 10);
+
+			ASSERT_BIN_SPACE(size);
+
+			if (this->data) this->dataPtr += size;
+			else            this->binPtr  += size;
 		}
 		else {
 			bool    isInst = false;
@@ -343,7 +373,9 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 			else {
 				ASSERT_BIN_SPACE(4);
 
-				this->incomplete = SafeRealloc(this->incomplete, this->incompleteLen + 1);
+				this->incomplete = SafeRealloc(
+					this->incomplete, (this->incompleteLen + 1) * sizeof(IncompValue)
+				);
 
 				strcpy(this->incomplete[this->incompleteLen].name, this->token);
 				this->incomplete[this->incompleteLen].ptr = (uint32_t*) this->binPtr;

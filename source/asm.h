@@ -46,6 +46,7 @@ typedef struct {
 	uint8_t* dataPtr;
 } Assembler;
 
+void Assembler_InitBasic(Assembler* this);
 void Assembler_Init(Assembler* this, const char* code, VM* vm);
 void Assembler_Free(Assembler* this);
 bool Assembler_Assemble(Assembler* this, bool init, size_t* size);

@@ -42,6 +42,14 @@ Instructions have this format:
 - `0x24` - LE
 - `0x25` - GE
 - `0x26` - NEG
+- `0x27` - AND
+- `0x28` - XOR
+- `0x29` - OR
+- `0x2A` - NOT
+- `0x2B` - SWAP
+- `0x2C` - CALL
+- `0x2D` - RET
+- `0x2E` - FARCALL
 
 ## System calls
 The higher 16 bits is the section, the lower 16 bits is the call.
@@ -55,6 +63,7 @@ This section has some space for user defined calls
 - `0x02` - Print hex: `( num -- )`
 - `0x03` - Input char: `( -- ch )`
 - `0x04` - Print null terminated string `( string -- )`
+- `0x05` - Input line: `( string* maxLength -- )`
 
 ### Section `0x0002` - Memory
 - `0x00` - Alloc: `( size -- ptr )`
@@ -64,3 +73,8 @@ This section has some space for user defined calls
 ### Section `0x0003` - VM
 - `0x00` - Dump: `( -- )`
 - `0x01` - Get user calls amount `( -- size )`
+- `0x02` - Run on new instance `( code codeSize areaSize stackSize areaPtr -- )`
+
+### Section `0x0004` - Assembler
+- `0x00` - Assemble `( dest destSize source -- size )`
+	- Source must be null terminated

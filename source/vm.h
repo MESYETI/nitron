@@ -47,11 +47,11 @@ enum {
 #define VM_AREA_SIZE         1048576
 #define VM_CODE_SIZE         1048576
 #define VM_DSTACK_SIZE       4096
-#define VM_RSTACK_SIZE       65536
+#define VM_RSTACK_SIZE       4096
 #define VM_USER_CALLS_AMOUNT 512
 
 // not configurable
-#define VM_ECALL_SECTIONS 4
+#define VM_ECALL_SECTIONS 5
 
 typedef struct VM VM;
 

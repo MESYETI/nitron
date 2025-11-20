@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <string.h>
+#include "asm.h"
 #include "mem.h"
 #include "calls.h"
 
@@ -32,6 +34,16 @@ static void PrintNTStr(VM* vm) {
 	fputs((char*) (*vm->dsp), stdout);
 }
 
+static void InputLine(VM* vm) {
+	-- vm->dsp;
+	size_t maxLen = *vm->dsp;
+	-- vm->dsp;
+	char* dest = (char*) *vm->dsp;
+
+	fgets(dest, maxLen, stdin);
+	dest[strlen(dest) - 1] = 0; // remove new line
+}
+
 static void Alloc(VM* vm) {
 	vm->dsp[-1] = (uint32_t) SafeMalloc(vm->dsp[-1]);
 }
@@ -63,6 +75,53 @@ static void UserCallSize(VM* vm) {
 	++ vm->dsp;
 }
 
+static void RunNewInstance(VM* vm) {
+	-- vm->dsp;
+	uint8_t* areaPtr = (uint8_t*) *vm->dsp;
+	-- vm->dsp;
+	size_t stackSize = *vm->dsp;
+	-- vm->dsp;
+	size_t areaSize = *vm->dsp;
+	-- vm->dsp;
+	size_t codeSize = *vm->dsp;
+	-- vm->dsp;
+	uint8_t* code = (uint8_t*) *vm->dsp;
+
+	VM vm2;
+	vm2.area     = areaPtr;
+	vm2.areaSize = areaSize;
+	vm2.ip       = code;
+	vm2.code     = code;
+	vm2.codeSize = codeSize;
+	vm2.dStack   = SafeMalloc(stackSize * 4);
+	vm2.rStack   = SafeMalloc(stackSize * 4);
+	vm2.dsp      = vm2.dStack;
+	vm2.rsp      = vm2.rStack;
+	Calls_InitVMCalls(&vm2);
+
+	VM_Run(&vm2);
+}
+
+static void Assemble(VM* vm) {
+	-- vm->dsp;
+	char* src = (char*) *vm->dsp;
+	-- vm->dsp;
+	size_t destSize = *vm->dsp;
+	-- vm->dsp;
+	uint8_t* dest = (uint8_t*) *vm->dsp;
+
+	size_t size;
+
+	Assembler assembler;
+	Assembler_Init(&assembler, src, vm);
+	assembler.bin    = dest;
+	assembler.binLen = destSize;
+	Assembler_Assemble(&assembler, true, &size);
+
+	*vm->dsp = (uint32_t) size;
+	++ vm->dsp;
+}
+
 #define ADD_SECTION(INDEX, BUF) \
 	vm->sections[INDEX] = (ECallSect) {sizeof(BUF) / sizeof(ECall), BUF}
 
@@ -75,7 +134,8 @@ void Calls_InitVMCalls(VM* vm) {
 		/* 0x01 */ &PrintStr,
 		/* 0x02 */ &PrintHex,
 		/* 0x03 */ &InputChar,
-		/* 0x04 */ &PrintNTStr
+		/* 0x04 */ &PrintNTStr,
+		/* 0x05 */ &InputLine
 	};
 	ADD_SECTION(0x0001, sect0001);
 
@@ -88,7 +148,13 @@ void Calls_InitVMCalls(VM* vm) {
 
 	static ECall sect0003[] = {
 		/* 0x00 */ &Dump,
-		/* 0x01 */ &UserCallSize
+		/* 0x01 */ &UserCallSize,
+		/* 0x02 */ &RunNewInstance
 	};
 	ADD_SECTION(0x0003, sect0003);
+
+	static ECall sect0004[] = {
+		/* 0x00 */ &Assemble
+	};
+	ADD_SECTION(0x0004, sect0004);
 }

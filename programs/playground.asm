@@ -1,6 +1,6 @@
 $data
-	@initMsg "Nitron Assembly Playground" 0a 00
-	@prompt "> " 00
+	@initMsg "Nitron 20 "Assembly 20 "Playground 0a 00
+	@prompt "> 20 00
 	@input reserve 256
 	@program reserve 1024
 $code

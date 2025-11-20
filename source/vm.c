@@ -233,6 +233,33 @@ INST(Not) {
 	vm->dsp[-1] = ~vm->dsp[-1];
 }
 
+INST(Swap) {
+	uint32_t a = vm->dsp[-2];
+	uint32_t b = vm->dsp[-1];
+
+	vm->dsp[-2] = b;
+	vm->dsp[-1] = a;
+}
+
+INST(Call) {
+	-- vm->dsp;
+	*vm->rsp = (uint32_t) vm->ip;
+	++ vm->rsp;
+	vm->ip = &vm->code[*vm->dsp];
+}
+
+INST(Ret) {
+	-- vm->rsp;
+	vm->ip = (uint8_t*) *vm->rsp;
+}
+
+INST(FarCall) {
+	-- vm->dsp;
+	*vm->rsp = (uint32_t) vm->ip;
+	++ vm->rsp;
+	vm->ip = (uint8_t*) *vm->dsp;
+}
+
 static uint8_t  area[VM_AREA_SIZE];
 static uint8_t  code[VM_CODE_SIZE];
 static uint32_t dStack[VM_DSTACK_SIZE];
@@ -290,6 +317,10 @@ void VM_Init(VM* vm) {
 	vm->insts[0x28] = &Inst_Xor;
 	vm->insts[0x29] = &Inst_Or;
 	vm->insts[0x2A] = &Inst_Not;
+	vm->insts[0x2B] = &Inst_Swap;
+	vm->insts[0x2C] = &Inst_Call;
+	vm->insts[0x2D] = &Inst_Ret;
+	vm->insts[0x2E] = &Inst_FarCall;
 }
 
 void VM_Free(VM* vm) {
