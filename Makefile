@@ -45,7 +45,7 @@ bin/fs:
 bin/disk:
 	mkdir -p bin/disk
 
-bin/%.o: source/%.c $(call deps,source/%.c) | bin/ bin/fs bin/disk
+bin/%.o: source/%.c $(call deps,source/%.c) romfs.h | bin/ bin/fs bin/disk
 	$(CC) $(CFLAGS) $(CPPFLAGS) $< -c -o $@
 
 clean:

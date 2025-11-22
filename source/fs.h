@@ -24,5 +24,6 @@ extern FileSystem* fileSystems[FS_AMOUNT];
 void         FS_Init(void);
 FileSystem** FS_NextFree(void);
 FileSystem** FS_Add(FileSystem* fs);
+Error        FS_ReadFile(const char* path, size_t* size, uint8_t** res);
 
 #endif

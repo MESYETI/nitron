@@ -1,17 +1,23 @@
 #include <stdio.h>
+#include <string.h>
+#include "asm.h"
+#include "mem.h"
+#include "calls.h"
 #include "system.h"
-#include "disk/mem.h"
 #include "fs/ark.h"
+#include "disk/mem.h"
 
 #include "../romfs.h"
 
-void System_Init(void) {
-	puts("Nitron BETA");
+VM vm;
+
+void System_Run(void) {
+	puts("Nitron OS in-dev");
 	puts("Made by MESYETI\n");
 
 	// create disks
 	Disk_Init();
-	Disk* romfs = Disk_Add(NewMemDisk("romfs", romfs_ark, sizeof(romfs_ark), true));
+	Disk* romfs = Disk_Add(NewMemDisk("rom", romfs_ark, sizeof(romfs_ark), true));
 	if (!romfs) {
 		fprintf(stderr, "Failed to add romfs disk\n");
 	}
@@ -31,7 +37,7 @@ void System_Init(void) {
 	Error success;
 	FS_Add(Ark_CreateFileSystem(romfs, &success));
 	if (success != N_ERROR_SUCCESS) {
-		printf("Failed to mount romfs: %s\n", ErrorToString(success));
+		fprintf(stderr, "Failed to mount romfs: %s\n", ErrorToString(success));
 	}
 
 	// print all filesystems
@@ -44,4 +50,49 @@ void System_Init(void) {
 		printf("    %d: %s\n", i, fileSystems[i]->name);
 	}
 	puts("");
+
+	char*  autoStart;
+	size_t size;
+	success = FS_ReadFile(":0/autostart.txt", &size, (uint8_t**) &autoStart);
+
+	if (success != N_ERROR_SUCCESS) {
+		fprintf(stderr, "Failed to read autostart: %s\n", ErrorToString(success));
+		exit(1);
+	}
+
+	autoStart       = SafeRealloc(autoStart, size + 1);
+	autoStart[size] = 0;
+
+	char* newLine = strchr(autoStart, '\n');
+	if (newLine) {
+		*newLine = 0;
+	}
+
+	printf("Autostart: %s\n", autoStart);
+
+	VM_Init(&vm);
+	Calls_InitVMCalls(&vm);
+
+	char*  file;
+	success = FS_ReadFile(autoStart, &size, (uint8_t**) &file);
+
+	if (success != N_ERROR_SUCCESS) {
+		fprintf(stderr, "Failed to read %s: %s\n", autoStart, ErrorToString(success));
+		exit(1);
+	}
+
+	Assembler assembler;
+	Assembler_Init(&assembler, file, &vm);
+	Assembler_Assemble(&assembler, true, &vm.codeSize);
+	free(file);
+
+	/*if (dumpRom) {
+		printf("ROM is %d bytes\n", vm.codeSize);
+		for (size_t i = 0; i < vm.codeSize; ++ i) {
+			printf("%.8X: %.2X (%c)\n", i, vm.code[i], vm.code[i]);
+		}
+
+		return;
+	}*/
+	VM_Run(&vm);
 }

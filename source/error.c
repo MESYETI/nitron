@@ -12,6 +12,7 @@ const char* ErrorToString(Error err) {
 		case N_ERROR_INTERNAL:              return "Internal error";
 		case N_ERROR_OUT_OF_BOUNDS_DISK:    return "Out of bounds disk access";
 		case N_ERROR_NOT_A_FILE:            return "Not a file";
+		case N_ERROR_INVALID_DRIVE:         return "Invalid drive";
 		default: return "???";
 	}
 }

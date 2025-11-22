@@ -1,8 +1,11 @@
 #ifndef N_SYSTEM_H
 #define N_SYSTEM_H
 
+#include "vm.h"
 #include "common.h"
 
-void System_Init(void);
+extern VM vm;
+
+void System_Run(void);
 
 #endif

@@ -13,7 +13,8 @@ enum {
 	N_ERROR_DISK_INACTIVE         = 6,
 	N_ERROR_INTERNAL              = 7,
 	N_ERROR_OUT_OF_BOUNDS_DISK    = 8,
-	N_ERROR_NOT_A_FILE            = 9
+	N_ERROR_NOT_A_FILE            = 9,
+	N_ERROR_INVALID_DRIVE         = 10
 };
 
 typedef uint32_t Error;
