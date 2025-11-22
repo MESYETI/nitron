@@ -39,10 +39,13 @@ $(OUT): $(OBJECTS)
 bin/:
 	mkdir -p bin
 
-bin/backends:
-	mkdir -p bin/backends
+bin/fs:
+	mkdir -p bin/fs
 
-bin/%.o: source/%.c $(call deps,source/%.c) | bin/ bin/backends
+bin/disk:
+	mkdir -p bin/disk
+
+bin/%.o: source/%.c $(call deps,source/%.c) | bin/ bin/fs bin/disk
 	$(CC) $(CFLAGS) $(CPPFLAGS) $< -c -o $@
 
 clean:

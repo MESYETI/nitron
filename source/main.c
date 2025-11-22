@@ -4,8 +4,11 @@
 #include "asm.h"
 #include "util.h"
 #include "calls.h"
+#include "system.h"
 
 int main(int argc, char** argv) {
+	System_Init();
+
 	bool  dumpRom = false;
 	char* path;
 
