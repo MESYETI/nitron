@@ -12,6 +12,7 @@ void Assembler_InitBasic(Assembler* this) {
 	this->macrosLen     = 0;
 	this->incomplete    = NULL;
 	this->incompleteLen = 0;
+	this->valueSize     = 0;
 }
 
 void Assembler_Init(Assembler* this, const char* code, VM* vm) {
@@ -67,7 +68,7 @@ static void NextToken(Assembler* this) {
 		}
 	}
 
-	size_t len = strcspn(this->code, " \t\n");
+	size_t len = strcspn(this->code, " \t\n}");
 	strncpy(this->token, this->code, len);
 	this->token[len]  = 0;
 	this->code       += len;
@@ -159,6 +160,22 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 			this->token[len + 1] = 0;
 			this->code += len + 1;
 		}
+		else if (this->code[0] == '{') {
+			ASSERT_BIN_SPACE(5);
+			*this->binPtr = 0x80; // NOPi = Push
+
+			*((uint32_t*) (this->binPtr + 1)) = (uint32_t) this->dataPtr;
+			this->binPtr += 5;
+			++ this->code;
+
+			this->data = true;
+			continue;
+		}
+		else if (this->code[0] == '}') {
+			this->data = false;
+			++ this->code;
+			continue;
+		}
 		else {
 			NextToken(this);
 		}
@@ -226,13 +243,35 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 				*dest += strlen(this->token) - 1;
 				continue;
 			}
+			case '%': {
+				if (strlen(this->token) != 2) {
+					fprintf(stderr, "Invalid integer size marker: %s\n", this->token);
+					return false;
+				}
+
+				switch (this->token[1]) {
+					case 'b': this->valueSize = 2; break;
+					case 's': this->valueSize = 4; break;
+					case 'w': this->valueSize = 8; break;
+					default: {
+						fprintf(stderr, "Invalid integer size marker: %s\n", this->token);
+						return false;
+					}
+				}
+				continue;
+			}
 			default: break;
 		}
 
 		if (strspn(this->token, "0123456789abcdef") == len) {
 			uint8_t** dest = this->data? &this->dataPtr : &this->binPtr;
+			size_t    size = this->valueSize == 0? len : this->valueSize;
 
-			switch (len) {
+			if (this->valueSize != 0) {
+				this->valueSize = 0;
+			}
+
+			switch (size) {
 				case 2: { // byte
 					ASSERT_BIN_SPACE(1);
 
@@ -269,7 +308,13 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 
 			NextToken(this);
 
-			switch (strlen(this->token)) {
+			size_t size = this->valueSize == 0? strlen(this->token) : this->valueSize;
+
+			if (this->valueSize != 0) {
+				this->valueSize = 0;
+			}
+
+			switch (size) {
 				case 2: value.size = 1; break;
 				case 4: value.size = 2; break;
 				case 8: value.size = 4; break;

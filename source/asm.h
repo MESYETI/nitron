@@ -38,6 +38,7 @@ typedef struct {
 	size_t       binLen;
 	IncompValue* incomplete;
 	size_t       incompleteLen;
+	size_t       valueSize;
 
 	// internal state
 	char     token[ASM_TOKEN_SIZE];
