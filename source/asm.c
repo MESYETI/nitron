@@ -277,9 +277,11 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 				if (strcmp(this->token, "%include") == 0) {
 					ReadStringToken(this);
 
-					char*  oldCode = this->code;
-					size_t size;
-					Error  error = FS_ReadFile(
+					char*    oldCode   = this->code;
+					uint8_t* oldBinPtr = this->binPtr;
+					size_t   size;
+
+					Error error = FS_ReadFile(
 						this->token, &size, (uint8_t**) &this->code
 					);
 
@@ -294,9 +296,13 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 					this->code       = SafeRealloc(this->code, size + 1);
 					this->code[size] = 0;
 
-					Assembler_Assemble(this, false, NULL);
+					char* code = this->code;
 
-					Free(this->code);
+					if (!Assembler_Assemble(this, false, NULL)) {
+						this->binPtr = oldBinPtr;
+					}
+
+					Free(code);
 					this->code = oldCode;
 					continue;
 				}

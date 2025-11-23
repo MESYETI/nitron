@@ -11,9 +11,13 @@ ifeq ($(BUILD),release)
 	#override CPPFLAGS += -NDEBUG
 else
 	override CFLAGS += -Og -g
-	ifeq ($(ASAN),y)
+	ifeq ($(ASAN), y)
 		override CFLAGS += -fno-omit-frame-pointer -fsanitize=address
 		override LDFLAGS += -fsanitize=address
+	endif
+
+	ifeq ($(SYS_ALLOC), y)
+		override CFLAGS += -DN_SYS_ALLOC
 	endif
 endif
 

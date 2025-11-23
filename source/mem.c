@@ -65,43 +65,47 @@ void FreeAllocator(void) {
 #define MEM_BLOCK(DATA)   (((MemBlock*) (DATA)) - 1)
 
 void* Alloc(size_t size) {
-	if (size == 0) return NULL;
+	#ifdef N_SYS_ALLOC
+		return malloc(size);
+	#else
+		if (size == 0) return NULL;
 
-	MemBlock* start = nextBlock;
+		MemBlock* start = nextBlock;
 
-	while ((size > nextBlock->size) || !nextBlock->free) {
-		nextBlock = nextBlock->next;
+		while ((size > nextBlock->size) || !nextBlock->free) {
+			nextBlock = nextBlock->next;
 
-		if (!nextBlock) {
-			nextBlock = base;
+			if (!nextBlock) {
+				nextBlock = base;
+			}
+			else if (nextBlock == start) {
+				return NULL;
+			}
 		}
-		else if (nextBlock == start) {
-			return NULL;
+
+		nextBlock->free = false;
+
+		if (
+			(size < nextBlock->size) &&
+			(nextBlock->size - size >= sizeof(MemBlock) + MIN_LEFTOVER_SIZE)
+		) {
+			MemBlock* leftover = (MemBlock*) (BLOCK_DATA(nextBlock) + size);
+			leftover->size     = nextBlock->size - size - sizeof(MemBlock);
+			leftover->free     = true;
+			leftover->prev     = nextBlock;
+			leftover->next     = nextBlock->next;
+			nextBlock->size    = size;
+			nextBlock->next    = leftover;
+
+			if (leftover->next) {
+				leftover->next->prev = leftover;
+			}
 		}
-	}
 
-	nextBlock->free = false;
-
-	if (
-		(size < nextBlock->size) &&
-		(nextBlock->size - size >= sizeof(MemBlock) + MIN_LEFTOVER_SIZE)
-	) {
-		MemBlock* leftover = (MemBlock*) (BLOCK_DATA(nextBlock) + size);
-		leftover->size     = nextBlock->size - size - sizeof(MemBlock);
-		leftover->free     = true;
-		leftover->prev     = nextBlock;
-		leftover->next     = nextBlock->next;
-		nextBlock->size    = size;
-		nextBlock->next    = leftover;
-
-		if (leftover->next) {
-			leftover->next->prev = leftover;
-		}
-	}
-
-	MemBlock* block = nextBlock;
-	nextBlock = block->next;
-	return BLOCK_DATA(block);
+		MemBlock* block = nextBlock;
+		nextBlock       = block->next;
+		return BLOCK_DATA(block);
+	#endif
 }
 
 static void MergeNext(MemBlock* block) {
@@ -114,53 +118,61 @@ static void MergeNext(MemBlock* block) {
 }
 
 void Free(void* ptr) {
-	MemBlock* block = MEM_BLOCK((uint8_t*) ptr);
+	#ifdef N_SYS_ALLOC
+		free(ptr);
+	#else
+		MemBlock* block = MEM_BLOCK((uint8_t*) ptr);
 
-	if (block->free) {
-		fprintf(stderr, "Double free: %p\n", ptr);
-		exit(1);
-	}
+		if (block->free) {
+			fprintf(stderr, "Double free: %p\n", ptr);
+			exit(1);
+		}
 
-	block->free = true;
-	if (block->next) if (block->next->free) {
-		MergeNext(block);
-	}
-	if (block->prev) if (block->prev->free) {
-		block = block->prev;
-		MergeNext(block);
-	}
+		block->free = true;
+		if (block->next) if (block->next->free) {
+			MergeNext(block);
+		}
+		if (block->prev) if (block->prev->free) {
+			block = block->prev;
+			MergeNext(block);
+		}
 
-	nextBlock = block;
+		nextBlock = block;
+	#endif
 }
 
 void* Realloc(void* ptr, size_t size) {
-	if (ptr == NULL) {
-		return Alloc(size);
-	}
-	else if (size == 0) {
+	#ifdef N_SYS_ALLOC
+		return realloc(ptr, size);
+	#else
+		if (ptr == NULL) {
+			return Alloc(size);
+		}
+		else if (size == 0) {
+			Free(ptr);
+			return NULL;
+		}
+
+		MemBlock* oldBlock = MEM_BLOCK((uint8_t*) ptr);
+
+		if (oldBlock->free) {
+			fprintf(stderr, "Re-allocating freed block at %p\n", ptr);
+			exit(1);
+		}
+
+		size_t oldSize = oldBlock->size;
 		Free(ptr);
-		return NULL;
-	}
 
-	MemBlock* oldBlock = MEM_BLOCK((uint8_t*) ptr);
+		MemBlock* newBlock = MEM_BLOCK((uint8_t*) Alloc(size));
+		if (newBlock != oldBlock) {
+			memmove(
+				BLOCK_DATA(newBlock), BLOCK_DATA(oldBlock),
+				oldSize > newBlock->size? newBlock->size : oldSize
+			);
+		}
 
-	if (oldBlock->free) {
-		fprintf(stderr, "Re-allocating freed block at %p\n", ptr);
-		exit(1);
-	}
-
-	size_t oldSize = oldBlock->size;
-	Free(ptr);
-
-	MemBlock* newBlock = MEM_BLOCK((uint8_t*) Alloc(size));
-	if (newBlock != oldBlock) {
-		memmove(
-			BLOCK_DATA(newBlock), BLOCK_DATA(oldBlock),
-			oldSize > newBlock->size? newBlock->size : oldSize
-		);
-	}
-
-	return BLOCK_DATA(newBlock);
+		return BLOCK_DATA(newBlock);
+	#endif
 }
 
 MemUsage GetMemUsage(void) {

@@ -1,22 +1,22 @@
 ; IO
-define 00010000 N_PrintChar
-define 00010001 N_PrintString
-define 00010002 N_PrintHex
-define 00010003 N_InputChar
-define 00010004 N_PrintNTStr
-define 00010005 N_InputLine
+define N_PrintChar   00010000
+define N_PrintString 00010001
+define N_PrintHex    00010002
+define N_InputChar   00010003
+define N_PrintNTStr  00010004
+define N_InputLine   00010005
 
 ; Memory
-define 00020000 N_Alloc
-define 00020001 N_Realloc
-define 00020002 N_Free
+define N_Alloc   00020000
+define N_Realloc 00020001
+define N_Free    00020002
 
 ; VM
-define 00030000 N_Dump
-define 00030001 N_UserCallAmount
-define 00030002 N_RunOnNewInstance
+define N_Dump             00030000
+define N_UserCallAmount   00030001
+define N_RunOnNewInstance 00030002
 
 ; Assembler
-define 00040000 N_RunAssembler
-define 00040001 N_NewAssembler
-define 00040002 N_FreeAssembler
+define N_RunAssembler  00040000
+define N_NewAssembler  00040001
+define N_FreeAssembler 00040002
