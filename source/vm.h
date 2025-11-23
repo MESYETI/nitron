@@ -40,7 +40,10 @@ enum {
 	VM_INST_AND     = 0x27,
 	VM_INST_XOR     = 0x28,
 	VM_INST_OR      = 0x29,
-	VM_INST_NOT     = 0x2A
+	VM_INST_NOT     = 0x2A,
+	VM_INST_SWAP    = 0x2B,
+	VM_INST_CALL    = 0x2C,
+	VM_INST_RET     = 0x2D
 };
 
 // configurable

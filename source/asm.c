@@ -12,8 +12,6 @@ void Assembler_InitBasic(Assembler* this) {
 	this->macrosLen     = 0;
 	this->incomplete    = NULL;
 	this->incompleteLen = 0;
-
-	this->farLabels = false;
 }
 
 void Assembler_Init(Assembler* this, const char* code, VM* vm) {
@@ -122,8 +120,7 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 		{"NOT",     0x2A}, {"NOTi",     0xAA},
 		{"SWAP",    0x2B}, {"SWAPi",    0xAB},
 		{"CALL",    0x2C}, {"CALLi",    0xAC},
-		{"RET",     0x2D}, {"RETi",     0xAD},
-		{"FARCALL", 0x2E}, {"FARCALLi", 0xAE}
+		{"RET",     0x2D}, {"RETi",     0xAD}
 	};
 
 	#define ASSERT_BIN_SPACE(SIZE) do { \
@@ -214,11 +211,8 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 
 					this->values[this->valuesLen].value = (uint32_t) this->dataPtr;
 				}
-				else if (this->farLabels) {
-					this->values[this->valuesLen].value = (uint32_t) this->binPtr;
-				}
 				else {
-					this->values[this->valuesLen].value = this->binPtr - this->bin;
+					this->values[this->valuesLen].value = (uint32_t) this->binPtr;
 				}
 
 				++ this->valuesLen;

@@ -83,24 +83,14 @@ INST(Write) {
 
 INST(Jump) {
 	-- vm->dsp;
-
-	if (*vm->dsp >= vm->codeSize) {
-		fprintf(stderr, "Invalid jump: %.8X\n", *vm->dsp);
-		exit(1);
-	}
-
-	vm->ip = &vm->code[*vm->dsp];
+	vm->ip = (uint8_t*) *vm->dsp;
 }
 
 INST(Jnz) {
 	vm->dsp -= 2;
 
-	if (vm->dsp[1] >= vm->codeSize) {
-		fprintf(stderr, "Invalid jump: %.8X\n", vm->dsp[1]);
-	}
-
 	if (vm->dsp[0] != 0) {
-		vm->ip = &vm->code[vm->dsp[1]];
+		vm->ip = (uint8_t*) vm->dsp[1];
 	}
 }
 
@@ -163,7 +153,7 @@ INST(Jz) {
 	}
 
 	if (vm->dsp[0] == 0) {
-		vm->ip = &vm->code[vm->dsp[1]];
+		vm->ip = (uint8_t*) vm->dsp[1];
 	}
 }
 
@@ -245,19 +235,12 @@ INST(Call) {
 	-- vm->dsp;
 	*vm->rsp = (uint32_t) vm->ip;
 	++ vm->rsp;
-	vm->ip = &vm->code[*vm->dsp];
+	vm->ip = (uint8_t*) *vm->dsp;
 }
 
 INST(Ret) {
 	-- vm->rsp;
 	vm->ip = (uint8_t*) *vm->rsp;
-}
-
-INST(FarCall) {
-	-- vm->dsp;
-	*vm->rsp = (uint32_t) vm->ip;
-	++ vm->rsp;
-	vm->ip = (uint8_t*) *vm->dsp;
 }
 
 static uint8_t  area[VM_AREA_SIZE];
@@ -321,7 +304,6 @@ void VM_Init(VM* vm) {
 	vm->insts[0x2B] = &Inst_Swap;
 	vm->insts[0x2C] = &Inst_Call;
 	vm->insts[0x2D] = &Inst_Ret;
-	vm->insts[0x2E] = &Inst_FarCall;
 }
 
 void VM_Free(VM* vm) {
@@ -343,8 +325,8 @@ void VM_Run(VM* vm) {
 
 		if (!vm->insts[inst & 0x7F]) {
 			fprintf(
-				stderr, "Invalid opcode %.2X at %.8X\n",
-				inst & 0x7F, vm->ip - vm->code
+				stderr, "Invalid opcode %.2X at %p\n",
+				inst & 0x7F, vm->ip
 			);
 			exit(1);
 		}

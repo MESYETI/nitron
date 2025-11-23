@@ -18,7 +18,7 @@ $code
 	#program WRITEi programPtr
 
 	; create assembler
-	#00000001 ECALLi NewAssembler #assembler WRITE
+	ECALLi NewAssembler #assembler WRITE
 
 	#initMsg ECALLi PrintNTStr
 	@loop
@@ -39,7 +39,7 @@ $code
 		#programPtr READ ADD #00000001 ADD WRITEi programPtr
 
 		; call user's code
-		#oldProgramPtr READ FARCALL
+		#oldProgramPtr READ CALL
 
 		; loop again
 		JUMPi loop
