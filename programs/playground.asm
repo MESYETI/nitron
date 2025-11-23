@@ -1,4 +1,4 @@
-$data
+%data
 	@initMsg "Nitron Assembly Playground" 0a 00
 	@prompt "> " 00
 	@input reserve 256
@@ -6,7 +6,7 @@ $data
 	@assembler reserve 4
 	@programPtr reserve 4
 	@oldProgramPtr reserve 4
-$code
+%code
 	define PrintChar     00010000
 	define PrintHex      00010002
 	define PrintNTStr    00010004
@@ -28,6 +28,8 @@ $code
 
 		; assemble it somewhere
 		#programPtr READ #00000400 #input #assembler READ ECALLi Assemble
+		JZi fail ; restart if failed
+
 		DUP D2R ; save for advancing the program pointer
 
 		; add RET instruction
@@ -42,4 +44,7 @@ $code
 		#oldProgramPtr READ CALL
 
 		; loop again
+		JUMPi loop
+	@fail
+		{"Failed to assemble" 0a 00} ECALLi PrintNTStr
 		JUMPi loop

@@ -118,9 +118,12 @@ static void Assemble(VM* vm) {
 	assembler->vm     = vm;
 	assembler->bin    = dest;
 	assembler->binLen = destSize;
-	Assembler_Assemble(assembler, true, &size);
+	bool success = Assembler_Assemble(assembler, true, &size);
 
 	*vm->dsp = (uint32_t) size;
+	++ vm->dsp;
+
+	*vm->dsp = success? 1 : 0;
 	++ vm->dsp;
 }
 

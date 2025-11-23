@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include "fs.h"
 #include "asm.h"
 #include "mem.h"
 #include "util.h"
+#include "error.h"
 
 void Assembler_InitBasic(Assembler* this) {
 	this->values        = NULL;
@@ -15,7 +17,7 @@ void Assembler_InitBasic(Assembler* this) {
 	this->valueSize     = 0;
 }
 
-void Assembler_Init(Assembler* this, const char* code, VM* vm) {
+void Assembler_Init(Assembler* this, char* code, VM* vm) {
 	Assembler_InitBasic(this);
 	this->code   = code;
 	this->vm     = vm;
@@ -49,7 +51,7 @@ static bool CharMatch(char ch, const char* match) {
 	return false;
 }
 
-static void NextToken(Assembler* this) {
+static void SkipEmptyTokens(Assembler* this) {
 	this->token[0] = 0;
 
 	// skip empty tokens
@@ -67,6 +69,10 @@ static void NextToken(Assembler* this) {
 			break;
 		}
 	}
+}
+
+static void NextToken(Assembler* this) {
+	SkipEmptyTokens(this);
 
 	size_t len = strcspn(this->code, " \t\n}");
 	strncpy(this->token, this->code, len);
@@ -74,11 +80,31 @@ static void NextToken(Assembler* this) {
 	this->code       += len;
 }
 
+static void ReadStringToken(Assembler* this) {
+	SkipEmptyTokens(this);
+
+	if (this->code[0] != '"') {
+		fprintf(stderr, "Expectedd \", got '%c'", this->code[0]);
+		exit(1); // TODO
+	}
+	++ this->code;
+
+	size_t len = strcspn(this->code, "\"");
+	strncpy(this->token, this->code, len);
+	this->token[len]  = 0;
+	this->code       += len + 1;
+}
+
 bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 	if (init) {
 		this->binPtr  = this->bin;
 		this->dataPtr = this->vm->areaPtr;
 		this->data    = false;
+	}
+
+	if (this->incomplete) {
+		Free(this->incomplete);
+		this->incompleteLen = 0;
 	}
 
 	static const InstDef insts[] = {
@@ -199,19 +225,6 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 				// TODO
 				break;
 			}
-			case '$': {
-				if (strcmp(this->token, "$code") == 0) {
-					this->data = false;
-				}
-				else if (strcmp(this->token, "$data") == 0) {
-					this->data = true;
-				}
-				else {
-					fprintf(stderr, "Unknown mode '%s'\n", &this->token[1]);
-					return false;
-				}
-				continue;
-			}
 			case '@': {
 				this->values = SafeRealloc(
 					this->values, (this->valuesLen + 1) * sizeof(Value)
@@ -243,7 +256,7 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 				*dest += strlen(this->token) - 1;
 				continue;
 			}
-			case '%': {
+			case '$': {
 				if (strlen(this->token) != 2) {
 					fprintf(stderr, "Invalid integer size marker: %s\n", this->token);
 					return false;
@@ -258,6 +271,46 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 						return false;
 					}
 				}
+				continue;
+			}
+			case '%': {
+				if (strcmp(this->token, "%include") == 0) {
+					ReadStringToken(this);
+
+					char*  oldCode = this->code;
+					size_t size;
+					Error  error = FS_ReadFile(
+						this->token, &size, (uint8_t**) &this->code
+					);
+
+					if (error != N_ERROR_SUCCESS) {
+						fprintf(
+							stderr, "Failed to read '%s': %s\n", this->token,
+							ErrorToString(error)
+						);
+						return false;
+					}
+
+					this->code       = SafeRealloc(this->code, size + 1);
+					this->code[size] = 0;
+
+					Assembler_Assemble(this, false, NULL);
+
+					Free(this->code);
+					this->code = oldCode;
+					continue;
+				}
+				else if (strcmp(this->token, "%code") == 0) {
+					this->data = false;
+				}
+				else if (strcmp(this->token, "%data") == 0) {
+					this->data = true;
+				}
+				else {
+					fprintf(stderr, "Invalid directive: %s\n", this->token);
+					return false;
+				}
+
 				continue;
 			}
 			default: break;
@@ -296,7 +349,7 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 				default: {
 					fprintf(stderr, "Invalid integer length: %d nibbles\n", (int) len);
 					fprintf(stderr, "    '%s'\n", this->token);
-					exit(1);
+					return false;
 				}
 			}
 		}
@@ -321,7 +374,7 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 				default: {
 					fprintf(stderr, "Invalid integer length: %d nibbles\n", (int) len);
 					fprintf(stderr, "    '%s'\n", this->token);
-					exit(1);
+					return false;
 				}
 			}
 
@@ -401,9 +454,11 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 				if (strcmp(this->macros[i].name, this->token) == 0) {
 					isMacro = true;
 
-					const char* oldCode = this->code;
-					this->code          = this->macros[i].contents;
+					char* oldCode = this->code;
+					this->code    = this->macros[i].contents;
+
 					Assembler_Assemble(this, false, NULL);
+
 					this->code = oldCode;
 				}
 			}
@@ -412,7 +467,7 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 
 			if (this->data) {
 				fprintf(stderr, "Unknown identifier '%s'\n", this->token);
-				exit(1);
+				return false;
 			}
 			else {
 				ASSERT_BIN_SPACE(4);
@@ -443,7 +498,7 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 						stderr, "Incomplete value '%s' must be 4 bytes",
 						this->values[j].name
 					);
-					exit(1);
+					return false;
 				}
 
 				*this->incomplete[i].ptr = this->values[j].value;
@@ -453,7 +508,7 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 
 		if (!found) {
 			fprintf(stderr, "Couldn't find value '%s'\n", this->incomplete[i].name);
-			exit(1);
+			return false;
 		}
 	}
 

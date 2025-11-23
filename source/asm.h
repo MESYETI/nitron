@@ -28,7 +28,7 @@ typedef struct {
 } Macro;
 
 typedef struct {
-	const char*  code;
+	char*        code;
 	VM*          vm;
 	Value*       values;
 	size_t       valuesLen;
@@ -48,7 +48,7 @@ typedef struct {
 } Assembler;
 
 void Assembler_InitBasic(Assembler* this);
-void Assembler_Init(Assembler* this, const char* code, VM* vm);
+void Assembler_Init(Assembler* this, char* code, VM* vm);
 void Assembler_Free(Assembler* this);
 bool Assembler_Assemble(Assembler* this, bool init, size_t* size);
 

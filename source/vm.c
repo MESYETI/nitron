@@ -148,10 +148,6 @@ INST(Write16) {
 INST(Jz) {
 	vm->dsp -= 2;
 
-	if (vm->dsp[1] >= vm->codeSize) {
-		fprintf(stderr, "Invalid jump: %.8X\n", vm->dsp[1]);
-	}
-
 	if (vm->dsp[0] == 0) {
 		vm->ip = (uint8_t*) vm->dsp[1];
 	}
