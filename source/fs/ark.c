@@ -73,13 +73,13 @@ static void FreeDir(ArkEntry* dir) {
 			FreeDir(&dir->folderContents[i]);
 		}
 
-		free(dir->folderContents);
+		Free(dir->folderContents);
 	}
 }
 
 static void FreeReader(Reader* reader) {
 	FreeDir(&reader->root);
-	free(reader->strings);
+	Free(reader->strings);
 }
 
 static ArkEntry ReadEntry(Reader* reader, Error* success) {
@@ -246,7 +246,7 @@ FileSystem* Ark_CreateFileSystem(Disk* disk, Error* error) {
 	Error res = Read(&ret->reader);
 	*error    = res;
 	if (res != N_ERROR_SUCCESS) {
-		free(ret);
+		Free(ret);
 		return NULL;
 	}
 

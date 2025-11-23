@@ -26,18 +26,18 @@ void Assembler_Init(Assembler* this, const char* code, VM* vm) {
 
 void Assembler_Free(Assembler* this) {
 	for (size_t i = 0; i < this->valuesLen; ++ i) {
-		free(this->values[i].name);
+		Free(this->values[i].name);
 	}
 	if (this->values != NULL) {
-		free(this->values);
+		Free(this->values);
 	}
 
 	for (size_t i = 0; i < this->macrosLen; ++ i) {
-		free(this->macros[i].name);
-		free(this->macros[i].contents);
+		Free(this->macros[i].name);
+		Free(this->macros[i].contents);
 	}
 	if (this->macros != NULL) {
-		free(this->macros);
+		Free(this->macros);
 	}
 }
 

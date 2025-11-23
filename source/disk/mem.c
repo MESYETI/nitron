@@ -7,11 +7,11 @@ typedef struct {
 	size_t   size;
 } MemDisk;
 
-static void Free(Disk* this) {
-	free(this->data);
+static void FreeDisk(Disk* this) {
+	Free(this->data);
 }
 
-static Error Read(Disk* this, size_t where, size_t size, uint8_t* dest) {
+static Error ReadDisk(Disk* this, size_t where, size_t size, uint8_t* dest) {
 	MemDisk* memDisk = (MemDisk*) this->data;
 
 	if (size > memDisk->size - where) {
@@ -22,7 +22,7 @@ static Error Read(Disk* this, size_t where, size_t size, uint8_t* dest) {
 	return N_ERROR_SUCCESS;
 }
 
-static Error Write(Disk* this, size_t where, size_t size, uint8_t* data) {
+static Error WriteDisk(Disk* this, size_t where, size_t size, uint8_t* data) {
 	MemDisk* memDisk = (MemDisk*) this->data;
 
 	if (size > memDisk->size - where) {
@@ -40,9 +40,9 @@ Disk NewMemDisk(const char* name, uint8_t* mem, size_t size, bool readOnly) {
 	ret.name     = name;
 	ret.readOnly = readOnly;
 	ret.size     = size;
-	ret.free     = &Free;
-	ret.read     = &Read;
-	ret.write    = &Write;
+	ret.free     = &FreeDisk;
+	ret.read     = &ReadDisk;
+	ret.write    = &WriteDisk;
 
 	MemDisk* memDisk = SafeMalloc(sizeof(MemDisk));
 	memDisk->mem     = mem;

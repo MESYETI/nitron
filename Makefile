@@ -6,8 +6,6 @@ LD      := $(CC)
 override CFLAGS += -std=c99 -Wall -Wextra -Wuninitialized -Wundef -pedantic -Ilib -m32
 override LDLIBS += -lm -m32
 
-override CFLAGS += -DAE_BACKEND_GL11 -DAE_AUDIO_PSRC
-
 ifeq ($(BUILD),release)
 	override CFLAGS += -O3
 	#override CPPFLAGS += -NDEBUG

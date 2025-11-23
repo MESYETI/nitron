@@ -12,6 +12,8 @@
 VM vm;
 
 void System_Run(void) {
+	InitAllocator();
+
 	puts("Nitron OS in-dev");
 	puts("Made by MESYETI\n");
 
@@ -68,7 +70,11 @@ void System_Run(void) {
 		*newLine = 0;
 	}
 
-	printf("Autostart: %s\n", autoStart);
+	// print memory usage
+	MemUsage usage = GetMemUsage();
+	if (usage.available) {
+		printf("%d B total, %d B used\n\n", usage.total, usage.used);
+	}
 
 	VM_Init(&vm);
 	Calls_InitVMCalls(&vm);
@@ -81,10 +87,13 @@ void System_Run(void) {
 		exit(1);
 	}
 
+	file       = SafeRealloc(file, size + 1);
+	file[size] = 0;
+
 	Assembler assembler;
 	Assembler_Init(&assembler, file, &vm);
 	Assembler_Assemble(&assembler, true, &vm.codeSize);
-	free(file);
+	Free(file);
 
 	/*if (dumpRom) {
 		printf("ROM is %d bytes\n", vm.codeSize);
@@ -95,4 +104,6 @@ void System_Run(void) {
 		return;
 	}*/
 	VM_Run(&vm);
+
+	FreeAllocator();
 }

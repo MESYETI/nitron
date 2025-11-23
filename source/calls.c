@@ -44,18 +44,18 @@ static void InputLine(VM* vm) {
 	dest[strlen(dest) - 1] = 0; // remove new line
 }
 
-static void Alloc(VM* vm) {
-	vm->dsp[-1] = (uint32_t) SafeMalloc(vm->dsp[-1]);
+static void CallAlloc(VM* vm) {
+	vm->dsp[-1] = (uint32_t) Alloc(vm->dsp[-1]);
 }
 
-static void Realloc(VM* vm) {
+static void CallRealloc(VM* vm) {
 	-- vm->dsp;
-	vm->dsp[-1] = (uint32_t) SafeRealloc((void*) vm->dsp[-1], vm->dsp[0]);
+	vm->dsp[-1] = (uint32_t) Realloc((void*) vm->dsp[-1], vm->dsp[0]);
 }
 
-static void Free(VM* vm) {
+static void CallFree(VM* vm) {
 	-- vm->dsp;
-	free((void*) *vm->dsp);
+	Free((void*) *vm->dsp);
 }
 
 static void Dump(VM* vm) {
@@ -125,7 +125,7 @@ static void Assemble(VM* vm) {
 }
 
 static void NewAssembler(VM* vm) {
-	Assembler* assembler = malloc(sizeof(Assembler));
+	Assembler* assembler = Alloc(sizeof(Assembler));
 
 	if (assembler == NULL) {
 		*vm->dsp = 0;
@@ -147,7 +147,7 @@ static void FreeAssembler(VM* vm) {
 	Assembler* assembler = (Assembler*) *vm->dsp;
 
 	Assembler_Free(assembler);
-	free(assembler);
+	Free(assembler);
 }
 
 #define ADD_SECTION(INDEX, BUF) \
@@ -168,9 +168,9 @@ void Calls_InitVMCalls(VM* vm) {
 	ADD_SECTION(0x0001, sect0001);
 
 	static ECall sect0002[] = {
-		/* 0x00 */ &Alloc,
-		/* 0x01 */ &Realloc,
-		/* 0x02 */ &Free
+		/* 0x00 */ &CallAlloc,
+		/* 0x01 */ &CallRealloc,
+		/* 0x02 */ &CallFree
 	};
 	ADD_SECTION(0x0002, sect0002);
 

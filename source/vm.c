@@ -325,7 +325,7 @@ void VM_Init(VM* vm) {
 }
 
 void VM_Free(VM* vm) {
-	free(vm->area);
+	(void) vm;
 }
 
 void VM_Run(VM* vm) {
