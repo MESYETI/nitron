@@ -165,6 +165,10 @@ void* Realloc(void* ptr, size_t size) {
 
 		MemBlock* newBlock = MEM_BLOCK((uint8_t*) Alloc(size));
 		if (newBlock != oldBlock) {
+			if (newBlock == NULL) {
+				return NULL;
+			}
+
 			memmove(
 				BLOCK_DATA(newBlock), BLOCK_DATA(oldBlock),
 				oldSize > newBlock->size? newBlock->size : oldSize

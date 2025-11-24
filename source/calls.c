@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <string.h>
+#include "fs.h"
 #include "asm.h"
 #include "mem.h"
 #include "calls.h"
+#include "error.h"
 
 static void PrintCh(VM* vm) {
 	-- vm->dsp;
@@ -102,6 +104,21 @@ static void RunNewInstance(VM* vm) {
 	VM_Run(&vm2);
 }
 
+static void ErrorToStringCall(VM* vm) {
+	vm->dsp[-1] = (uint32_t) ErrorToString((Error) vm->dsp[-1]);
+}
+
+static void DumpMemory(VM* vm) {
+	vm->dsp -= 2;
+
+	uint8_t* addr = (uint8_t*) vm->dsp[0];
+	size_t   size = vm->dsp[1];
+
+	for (size_t i = 0; i < size; ++ i) {
+		printf("%.8X: %.2X\n", i, addr[i]);
+	}
+}
+
 static void Assemble(VM* vm) {
 	-- vm->dsp;
 	Assembler* assembler = (Assembler*) *vm->dsp;
@@ -150,6 +167,40 @@ static void FreeAssembler(VM* vm) {
 	Free(assembler);
 }
 
+static void ReadFile(VM* vm) {
+	-- vm->dsp;
+	const char* path = (const char*) *vm->dsp;
+
+	size_t   size;
+	uint8_t* contents;
+
+	Error success = FS_ReadFile(path, &size, &contents);
+
+	vm->dsp[0]  = (uint32_t) size;
+	vm->dsp[1]  = (uint32_t) contents;
+	vm->dsp[2]  = success;
+	vm->dsp    += 3;
+}
+
+static void ReadTextFile(VM* vm) {
+	-- vm->dsp;
+	const char* path = (const char*) *vm->dsp;
+
+	size_t   size;
+	uint8_t* contents;
+
+	Error success = FS_ReadFile(path, &size, &contents);
+
+	contents = Realloc(contents, size + 1);
+	if (contents != NULL) {
+		contents[size] = 0;
+	}
+
+	vm->dsp[0]  = (uint32_t) contents;
+	vm->dsp[1]  = success;
+	vm->dsp    += 2;
+}
+
 #define ADD_SECTION(INDEX, BUF) \
 	vm->sections[INDEX] = (ECallSect) {sizeof(BUF) / sizeof(ECall), BUF}
 
@@ -177,7 +228,9 @@ void Calls_InitVMCalls(VM* vm) {
 	static ECall sect0003[] = {
 		/* 0x00 */ &Dump,
 		/* 0x01 */ &UserCallSize,
-		/* 0x02 */ &RunNewInstance
+		/* 0x02 */ &RunNewInstance,
+		/* 0x03 */ &ErrorToStringCall,
+		/* 0x04 */ &DumpMemory
 	};
 	ADD_SECTION(0x0003, sect0003);
 
@@ -187,4 +240,10 @@ void Calls_InitVMCalls(VM* vm) {
 		/* 0x02 */ &FreeAssembler
 	};
 	ADD_SECTION(0x0004, sect0004);
+
+	static ECall sect0005[] = {
+		/* 0x00 */ &ReadFile,
+		/* 0x01 */ &ReadTextFile
+	};
+	ADD_SECTION(0x0005, sect0005);
 }

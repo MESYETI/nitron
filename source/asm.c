@@ -15,6 +15,8 @@ void Assembler_InitBasic(Assembler* this) {
 	this->incomplete    = NULL;
 	this->incompleteLen = 0;
 	this->valueSize     = 0;
+	this->included      = NULL;
+	this->includedLen   = 0;
 }
 
 void Assembler_Init(Assembler* this, char* code, VM* vm) {
@@ -106,6 +108,9 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 		Free(this->incomplete);
 		this->incompleteLen = 0;
 	}
+
+	char* codeStart = this->code;
+	printf("ASSEMBLING: %s\n", this->code);
 
 	static const InstDef insts[] = {
 		{"NOP",     0x00}, {"NOPi",     0x80},
@@ -202,6 +207,11 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 			++ this->code;
 			continue;
 		}
+		else if (this->code[0] == '(') {
+			while (this->code[0] && (this->code[0] != ')')) ++ this->code;
+			++ this->code;
+			continue;
+		}
 		else {
 			NextToken(this);
 		}
@@ -222,8 +232,23 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 				continue;
 			}
 			case ':': {
-				// TODO
-				break;
+				Macro macro;
+				strcpy(macro.name, &this->token[1]);
+
+				size_t contentsLen = strcspn(this->code, ":");
+				macro.contents     = SafeMalloc(contentsLen + 1);
+
+				strncpy(macro.contents, this->code, contentsLen);
+
+				macro.contents[contentsLen] = 0;
+				this->code += contentsLen + 1;
+
+				this->macros = SafeRealloc(
+					this->macros, (this->macrosLen + 1) * sizeof(Macro)
+				);
+				this->macros[this->macrosLen] = macro;
+				++ this->macrosLen;
+				continue;
 			}
 			case '@': {
 				this->values = SafeRealloc(
@@ -276,6 +301,22 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 			case '%': {
 				if (strcmp(this->token, "%include") == 0) {
 					ReadStringToken(this);
+
+					bool alreadyIncluded = false;
+					for (size_t i = 0; i < this->includedLen; ++ i) {
+						if (strcmp(this->token, this->included[i]) == 0) {
+							alreadyIncluded = true;
+							break;
+						}
+					}
+
+					if (alreadyIncluded) continue;
+
+					this->included = SafeRealloc(
+						this->included, (this->includedLen + 1) * ASM_TOKEN_SIZE
+					);
+					strcpy(this->included[this->includedLen], this->token);
+					++ this->includedLen;
 
 					char*    oldCode   = this->code;
 					uint8_t* oldBinPtr = this->binPtr;
@@ -518,8 +559,15 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 		}
 	}
 
+	size_t sz = this->binPtr - this->bin;
+
 	if (size) {
-		*size = this->binPtr - this->bin;
+		*size = sz;
+	}
+
+	printf("RESULT: %s\n", codeStart);
+	for (size_t i = 0; i < sz; ++ i) {
+		printf("%.8X: %.2X\n", i, this->bin[i]);
 	}
 
 	this->vm->areaPtr = this->dataPtr;

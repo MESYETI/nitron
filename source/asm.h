@@ -23,7 +23,7 @@ typedef struct {
 } IncompValue;
 
 typedef struct {
-	char* name;
+	char  name[ASM_TOKEN_SIZE];
 	char* contents;
 } Macro;
 
@@ -39,6 +39,8 @@ typedef struct {
 	IncompValue* incomplete;
 	size_t       incompleteLen;
 	size_t       valueSize;
+	char         (*included)[ASM_TOKEN_SIZE];
+	size_t       includedLen;
 
 	// internal state
 	char     token[ASM_TOKEN_SIZE];
