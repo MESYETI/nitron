@@ -3,6 +3,6 @@
 
 #include "../fs.h"
 
-FileSystem* Ark_CreateFileSystem(Disk* disk, Error* error);
+FileSystem* Ark_CreateFileSystem(Disk* disk, Error* error, const char* name);
 
 #endif

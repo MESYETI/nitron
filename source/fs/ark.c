@@ -232,7 +232,7 @@ static Error ReadFile(FileSystem* p_fs, const char* path, size_t* size, uint8_t*
 	return ReadEntryContents(&fs->reader, entry, dest);
 }
 
-FileSystem* Ark_CreateFileSystem(Disk* disk, Error* error) {
+FileSystem* Ark_CreateFileSystem(Disk* disk, Error* error, const char* name) {
 	ArkFS* ret = SafeMalloc(sizeof(ArkFS));
 	// expect caller to write to name
 
@@ -241,7 +241,8 @@ FileSystem* Ark_CreateFileSystem(Disk* disk, Error* error) {
 	ret->parent.free       = &FreeFS;
 	ret->parent.fileExists = &FileExists;
 	ret->parent.readFile   = &ReadFile;
-	ret->parent.name       = "Read-only ARK";
+	ret->parent.name       = name;
+	ret->parent.niceName   = "Read-only ARK";
 
 	Error res = Read(&ret->reader);
 	*error    = res;

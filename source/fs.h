@@ -11,6 +11,7 @@ struct FileSystem {
 	void*       data;
 	Disk*       disk;
 	const char* name;
+	const char* niceName;
 
 	void    (*free)(FileSystem* fs);
 	bool    (*fileExists)(FileSystem* fs, const char* path);

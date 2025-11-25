@@ -1,6 +1,6 @@
 JUMPi cmd/end
 
-%include ":0/lib/calls.asm"
+%include ":rom/lib/calls.asm"
 
 @cmd/echo
 	ECALLi N_PrintNTStr

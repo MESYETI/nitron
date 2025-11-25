@@ -38,7 +38,7 @@ void System_Run(void) {
 
 	// mount filesystems
 	Error success;
-	FS_Add(Ark_CreateFileSystem(romfs, &success));
+	FS_Add(Ark_CreateFileSystem(romfs, &success, "rom"));
 	if (success != N_ERROR_SUCCESS) {
 		fprintf(stderr, "Failed to mount romfs: %s\n", ErrorToString(success));
 	}
@@ -50,13 +50,13 @@ void System_Run(void) {
 			continue;
 		}
 
-		printf("    %d: %s\n", i, fileSystems[i]->name);
+		printf("    %s: %s\n", fileSystems[i]->name, fileSystems[i]->niceName);
 	}
 	puts("");
 
 	char*  autoStart;
 	size_t size;
-	success = FS_ReadFile(":0/autostart.txt", &size, (uint8_t**) &autoStart);
+	success = FS_ReadFile(":rom/autostart.txt", &size, (uint8_t**) &autoStart);
 
 	if (success != N_ERROR_SUCCESS) {
 		fprintf(stderr, "Failed to read autostart: %s\n", ErrorToString(success));

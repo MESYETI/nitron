@@ -6,7 +6,7 @@
 - Create a folder named `romfs`.
 - Copy the `programs` folder into it
 - Create a file in `romfs` named `autostart.txt`
-- Write `:0/programs/playground.asm` in `autostart.txt`
+- Write `:rom/programs/playground.asm` in `autostart.txt`
 
 ## Build ROM FS
 Build the ark tool from <https://github.com/mesyeti/ArkasEngine> and install it.

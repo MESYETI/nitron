@@ -33,16 +33,31 @@ FileSystem** FS_Add(FileSystem* fs) {
 static FileSystem* GetFS(const char* path) {
 	if (path[0] != ':') return NULL;
 
-	const char* num = &path[1];
+	const char* name = &path[1];
+	size_t      nameLen;
 
-	if (strspn(num, "0123456789") == 0) {
-		return NULL;
+	const char* slash = strchr(path, '/');
+
+	if (slash) {
+		nameLen = slash - name;
+	}
+	else {
+		nameLen = strlen(name);
 	}
 
-	size_t drive = atoi(num);
-	if (!fileSystems[drive]) return NULL;
+	// find drive
+	for (size_t i = 0; i < FS_AMOUNT; ++ i) {
+		if (!fileSystems[i]) continue;
 
-	return fileSystems[drive];
+		if (
+			(strlen(fileSystems[i]->name) == nameLen) &&
+			(strncmp(fileSystems[i]->name, name, nameLen) == 0)
+		) {
+			return fileSystems[i];
+		}
+	}
+
+	return NULL;
 }
 
 Error FS_ReadFile(const char* path, size_t* size, uint8_t** res) {
