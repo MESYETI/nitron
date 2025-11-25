@@ -128,6 +128,8 @@ static void Assemble(VM* vm) {
 	size_t destSize = *vm->dsp;
 	-- vm->dsp;
 	uint8_t* dest = (uint8_t*) *vm->dsp;
+	-- vm->dsp;
+	bool completion = *vm->dsp != 0? true : false;
 
 	size_t size;
 
@@ -135,7 +137,7 @@ static void Assemble(VM* vm) {
 	assembler->vm     = vm;
 	assembler->bin    = dest;
 	assembler->binLen = destSize;
-	bool success = Assembler_Assemble(assembler, true, &size);
+	bool success = Assembler_Assemble(assembler, true, &size, completion);
 
 	*vm->dsp = (uint32_t) size;
 	++ vm->dsp;

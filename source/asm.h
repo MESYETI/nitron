@@ -52,6 +52,6 @@ typedef struct {
 void Assembler_InitBasic(Assembler* this);
 void Assembler_Init(Assembler* this, char* code, VM* vm);
 void Assembler_Free(Assembler* this);
-bool Assembler_Assemble(Assembler* this, bool init, size_t* size);
+bool Assembler_Assemble(Assembler* this, bool init, size_t* size, bool completion);
 
 #endif

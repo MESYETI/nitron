@@ -93,7 +93,7 @@ static void ReadStringToken(Assembler* this) {
 	this->code       += len + 1;
 }
 
-bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
+bool Assembler_Assemble(Assembler* this, bool init, size_t* size, bool completion) {
 	if (init) {
 		this->binPtr  = this->bin;
 		this->dataPtr = this->vm->areaPtr;
@@ -332,8 +332,9 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 
 					char* code = this->code;
 
-					if (!Assembler_Assemble(this, false, NULL)) {
+					if (!Assembler_Assemble(this, false, NULL, false)) {
 						this->binPtr = oldBinPtr;
+						Free(code);
 						return false;
 					}
 
@@ -498,7 +499,7 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 					char* oldCode = this->code;
 					this->code    = this->macros[i].contents;
 
-					Assembler_Assemble(this, false, NULL);
+					Assembler_Assemble(this, false, NULL, false);
 
 					this->code = oldCode;
 				}
@@ -527,29 +528,31 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 		}
 	}
 
-	for (size_t i = 0; i < this->incompleteLen; ++ i) {
-		bool found = false;
+	if (completion) {
+		for (size_t i = 0; i < this->incompleteLen; ++ i) {
+			bool found = false;
 
-		for (size_t j = 0; j < this->valuesLen; ++ j) {
-			if (strcmp(this->values[j].name, this->incomplete[i].name) == 0) {
-				found = true;
+			for (size_t j = 0; j < this->valuesLen; ++ j) {
+				if (strcmp(this->values[j].name, this->incomplete[i].name) == 0) {
+					found = true;
 
-				if (this->values[j].size != 4) {
-					fprintf(
-						stderr, "Incomplete value '%s' must be 4 bytes",
-						this->values[j].name
-					);
-					return false;
+					if (this->values[j].size != 4) {
+						fprintf(
+							stderr, "Incomplete value '%s' must be 4 bytes",
+							this->values[j].name
+						);
+						return false;
+					}
+
+					*this->incomplete[i].ptr = this->values[j].value;
+					break;
 				}
-
-				*this->incomplete[i].ptr = this->values[j].value;
-				break;
 			}
-		}
 
-		if (!found) {
-			fprintf(stderr, "Couldn't find value '%s'\n", this->incomplete[i].name);
-			return false;
+			if (!found) {
+				fprintf(stderr, "Couldn't find value '%s'\n", this->incomplete[i].name);
+				return false;
+			}
 		}
 	}
 

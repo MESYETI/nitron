@@ -89,7 +89,7 @@ This section has some space for user defined calls
 - `0x04` - Dump memory: `( addr size -- )`
 
 ### Section `0x0004` - Assembler
-- `0x00` - Assemble `( dest destSize source assembler* -- size success )`
+- `0x00` - Assemble `( completion? dest destSize source assembler* -- size success )`
 	- Source must be null terminated
 - `0x01` - New assembler `( -- asm*)`
 - `0x02` - Free assembler `( asm* -- )`

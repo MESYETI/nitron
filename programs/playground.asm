@@ -27,7 +27,7 @@
 		#input #00000100 ECALLi InputLine
 
 		; assemble it somewhere
-		#programPtr READ #00000400 #input #assembler READ ECALLi Assemble
+		#00000001 #programPtr READ #00000400 #input #assembler READ ECALLi Assemble
 		JZi fail ; restart if failed
 
 		DUP D2R ; save for advancing the program pointer
