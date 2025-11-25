@@ -1,4 +1,4 @@
-JMPi cmd/end
+JUMPi cmd/end
 
 %include ":0/lib/calls.asm"
 
