@@ -47,8 +47,7 @@ enum {
 };
 
 // configurable
-#define VM_AREA_SIZE         1048576
-#define VM_CODE_SIZE         1048576
+#define VM_AREA_SIZE         16384
 #define VM_DSTACK_SIZE       4096
 #define VM_RSTACK_SIZE       4096
 #define VM_USER_CALLS_AMOUNT 512

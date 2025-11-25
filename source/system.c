@@ -94,6 +94,8 @@ void System_Run(void) {
 	Assembler assembler;
 	Assembler_Init(&assembler, file, &vm);
 	Assembler_Assemble(&assembler, true, &vm.codeSize, true);
+	Assembler_Free(&assembler);
+	vm.code = assembler.bin;
 	Free(file);
 
 	/*if (dumpRom) {
@@ -105,6 +107,7 @@ void System_Run(void) {
 		return;
 	}*/
 	VM_Run(&vm);
+	Free(vm.code);
 
 	FreeAllocator();
 }

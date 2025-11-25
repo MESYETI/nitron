@@ -23,8 +23,8 @@ void Assembler_Init(Assembler* this, char* code, VM* vm) {
 	Assembler_InitBasic(this);
 	this->code   = code;
 	this->vm     = vm;
-	this->bin    = vm->code;
-	this->binLen = vm->codeSize;
+	this->bin    = NULL;
+	this->binLen = 0;
 }
 
 void Assembler_Free(Assembler* this) {
@@ -93,6 +93,30 @@ static void ReadStringToken(Assembler* this) {
 	this->code       += len + 1;
 }
 
+static bool AssertBinSpace(Assembler* this, size_t size) {
+	if (this->data) {
+		size_t bufSize = (this->dataPtr - this->vm->area) + size;
+
+		if (bufSize > this->vm->areaSize) {
+			fprintf(stderr, "%s\n", this->code);
+			fprintf(
+				stderr, "Not enough room to allocate %d bytes in %d byte buffer\n",
+				bufSize, this->vm->areaSize
+			);
+			return false;
+		}
+	}
+	else {
+		if ((this->binPtr - this->bin) + size > this->binLen) {
+			size_t offset = this->binPtr - this->bin;
+			this->bin     = SafeRealloc(this->bin, this->binLen + size + 256);
+			this->binPtr  = this->bin + offset;
+		}
+	}
+
+	return true;
+}
+
 bool Assembler_Assemble(Assembler* this, bool init, size_t* size, bool completion) {
 	if (init) {
 		this->binPtr  = this->bin;
@@ -149,10 +173,7 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size, bool completio
 	};
 
 	#define ASSERT_BIN_SPACE(SIZE) do { \
-		if ( \
-			(!this->data && ((this->binPtr - this->bin) + ((size_t) (SIZE)) > this->binLen)) || \
-			(this->data  && ((this->dataPtr - this->vm->area) + ((size_t) (SIZE)) > this->vm->areaSize)) \
-		) { \
+		if (!AssertBinSpace(this, (SIZE))) { \
 			fprintf(stderr, "Not enough room for binary\n"); \
 			return false; \
 		} \

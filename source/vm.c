@@ -240,7 +240,6 @@ INST(Ret) {
 }
 
 static uint8_t  area[VM_AREA_SIZE];
-static uint8_t  code[VM_CODE_SIZE];
 static uint32_t dStack[VM_DSTACK_SIZE];
 static uint32_t rStack[VM_RSTACK_SIZE];
 
@@ -249,8 +248,8 @@ void VM_Init(VM* vm) {
 	vm->areaPtr  = area;
 	vm->areaSize = VM_AREA_SIZE;
 	vm->ip       = 0;
-	vm->code     = code;
-	vm->codeSize = VM_CODE_SIZE;
+	vm->code     = NULL;
+	vm->codeSize = 0;
 	vm->dStack   = dStack;
 	vm->rStack   = rStack;
 	vm->dsp      = vm->dStack;

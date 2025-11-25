@@ -2,7 +2,7 @@
 	@initMsg "Nitron Assembly Playground" 0a 00
 	@prompt "> " 00
 	@input reserve 256
-	@program reserve 16384
+	@program reserve 8192
 	@assembler reserve 4
 	@programPtr reserve 4
 	@oldProgramPtr reserve 4
