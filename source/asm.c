@@ -25,6 +25,7 @@ void Assembler_Init(Assembler* this, char* code, VM* vm) {
 	this->vm     = vm;
 	this->bin    = NULL;
 	this->binLen = 0;
+	this->binCap = 0;
 }
 
 void Assembler_Free(Assembler* this) {
@@ -107,10 +108,11 @@ static bool AssertBinSpace(Assembler* this, size_t size) {
 		}
 	}
 	else {
-		if ((this->binPtr - this->bin) + size > this->binLen) {
-			size_t offset = this->binPtr - this->bin;
-			this->bin     = SafeRealloc(this->bin, this->binLen + size + 256);
-			this->binPtr  = this->bin + offset;
+		if ((this->binPtr - this->bin) + size > this->binCap) {
+			size_t offset  = this->binPtr - this->bin;
+			this->bin      = SafeRealloc(this->bin, this->binCap + size + 256);
+			this->binCap  += 256 + size;
+			this->binPtr   = this->bin + offset;
 		}
 	}
 

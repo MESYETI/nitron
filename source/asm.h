@@ -36,6 +36,7 @@ typedef struct {
 	size_t       macrosLen;
 	uint8_t*     bin;
 	size_t       binLen;
+	size_t       binCap;
 	IncompValue* incomplete;
 	size_t       incompleteLen;
 	size_t       valueSize;
