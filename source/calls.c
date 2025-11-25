@@ -24,6 +24,7 @@ static void PrintStr(VM* vm) {
 static void PrintHex(VM* vm) {
 	-- vm->dsp;
 	printf("%.8X", *vm->dsp);
+	fflush(stdout);
 }
 
 static void InputChar(VM* vm) {
@@ -34,6 +35,7 @@ static void InputChar(VM* vm) {
 static void PrintNTStr(VM* vm) {
 	-- vm->dsp;
 	fputs((char*) (*vm->dsp), stdout);
+	fflush(stdout);
 }
 
 static void InputLine(VM* vm) {
@@ -44,6 +46,12 @@ static void InputLine(VM* vm) {
 
 	fgets(dest, maxLen, stdin);
 	dest[strlen(dest) - 1] = 0; // remove new line
+}
+
+static void PrintDec(VM* vm) {
+	-- vm->dsp;
+	printf("%d", *vm->dsp);
+	fflush(stdout);
 }
 
 static void CallAlloc(VM* vm) {
@@ -117,6 +125,13 @@ static void DumpMemory(VM* vm) {
 	for (size_t i = 0; i < size; ++ i) {
 		printf("%.8X: %.2X\n", i, addr[i]);
 	}
+}
+
+static void GetMemoryUsage(VM* vm) {
+	MemUsage usage = GetMemUsage();
+	vm->dsp[0]  = usage.used;
+	vm->dsp[1]  = usage.total;
+	vm->dsp    += 2;
 }
 
 static void Assemble(VM* vm) {
@@ -203,6 +218,25 @@ static void ReadTextFile(VM* vm) {
 	vm->dsp    += 2;
 }
 
+static void WriteFile(VM* vm) {
+	vm->dsp -= 3;
+	const char* path = (const char*) vm->dsp[0];
+	size_t      size = (size_t)      vm->dsp[1];
+	uint8_t*    data = (uint8_t*)    vm->dsp[2];
+
+	*vm->dsp = (uint32_t) FS_WriteFile(path, size, data);
+	++ vm->dsp;
+}
+
+static void WriteTextFile(VM* vm) {
+	vm->dsp -= 2;
+	const char* path = (const char*) vm->dsp[0];
+	uint8_t*    data = (uint8_t*)    vm->dsp[1];
+
+	*vm->dsp = (uint32_t) FS_WriteFile(path, strlen((const char*) data), data);
+	++ vm->dsp;
+}
+
 #define ADD_SECTION(INDEX, BUF) \
 	vm->sections[INDEX] = (ECallSect) {sizeof(BUF) / sizeof(ECall), BUF}
 
@@ -216,7 +250,8 @@ void Calls_InitVMCalls(VM* vm) {
 		/* 0x02 */ &PrintHex,
 		/* 0x03 */ &InputChar,
 		/* 0x04 */ &PrintNTStr,
-		/* 0x05 */ &InputLine
+		/* 0x05 */ &InputLine,
+		/* 0x06 */ &PrintDec
 	};
 	ADD_SECTION(0x0001, sect0001);
 
@@ -232,7 +267,8 @@ void Calls_InitVMCalls(VM* vm) {
 		/* 0x01 */ &UserCallSize,
 		/* 0x02 */ &RunNewInstance,
 		/* 0x03 */ &ErrorToStringCall,
-		/* 0x04 */ &DumpMemory
+		/* 0x04 */ &DumpMemory,
+		/* 0x05 */ &GetMemoryUsage
 	};
 	ADD_SECTION(0x0003, sect0003);
 
@@ -245,7 +281,9 @@ void Calls_InitVMCalls(VM* vm) {
 
 	static ECall sect0005[] = {
 		/* 0x00 */ &ReadFile,
-		/* 0x01 */ &ReadTextFile
+		/* 0x01 */ &ReadTextFile,
+		/* 0x02 */ &WriteFile,
+		/* 0x03 */ &WriteTextFile
 	};
 	ADD_SECTION(0x0005, sect0005);
 }

@@ -5,6 +5,7 @@ define N_PrintHex    00010002
 define N_InputChar   00010003
 define N_PrintNTStr  00010004
 define N_InputLine   00010005
+define N_PrintDec    00010006
 
 ; Memory
 define N_Alloc   00020000
@@ -16,6 +17,8 @@ define N_Dump             00030000
 define N_UserCallAmount   00030001
 define N_RunOnNewInstance 00030002
 define N_ErrorToString    00030003
+define N_DumpMemory       00030004
+define N_GetMemUsage      00030005
 
 ; Assembler
 define N_RunAssembler  00040000
@@ -23,5 +26,7 @@ define N_NewAssembler  00040001
 define N_FreeAssembler 00040002
 
 ; Filesystem
-define N_ReadFile     00050000
-define N_ReadTextFile 00050001
+define N_ReadFile      00050000
+define N_ReadTextFile  00050001
+define N_WriteText     00050002
+define N_WriteTextFile 00050003

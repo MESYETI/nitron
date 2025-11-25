@@ -17,6 +17,7 @@ struct FileSystem {
 	bool    (*fileExists)(FileSystem* fs, const char* path);
 	int32_t (*fileSize)(FileSystem* fs, const char* path);
 	Error   (*readFile)(FileSystem* fs, const char* path, size_t* size, uint8_t** dest);
+	Error   (*writeFile)(FileSystem* fs, const char* path, size_t size, uint8_t* data);
 };
 
 #define FS_AMOUNT 8
@@ -26,5 +27,6 @@ void         FS_Init(void);
 FileSystem** FS_NextFree(void);
 FileSystem** FS_Add(FileSystem* fs);
 Error        FS_ReadFile(const char* path, size_t* size, uint8_t** res);
+Error        FS_WriteFile(const char* path, size_t size, uint8_t* data);
 
 #endif

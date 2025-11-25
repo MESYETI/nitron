@@ -241,6 +241,7 @@ FileSystem* Ark_CreateFileSystem(Disk* disk, Error* error, const char* name) {
 	ret->parent.free       = &FreeFS;
 	ret->parent.fileExists = &FileExists;
 	ret->parent.readFile   = &ReadFile;
+	ret->parent.writeFile  = NULL; // read only
 	ret->parent.name       = name;
 	ret->parent.niceName   = "Read-only ARK";
 

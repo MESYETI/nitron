@@ -75,6 +75,7 @@ This section has some space for user defined calls
 - `0x03` - Input char: `( -- ch )`
 - `0x04` - Print null terminated string `( string -- )`
 - `0x05` - Input line: `( string* maxLength -- )`
+- `0x06` - Print decimal: `( num -- )`
 
 ### Section `0x0002` - Memory
 - `0x00` - Alloc: `( size -- ptr )`
@@ -87,6 +88,7 @@ This section has some space for user defined calls
 - `0x02` - Run on new instance `( code codeSize areaSize stackSize areaPtr -- )`
 - `0x03` - Error to string `( error -- str* )`
 - `0x04` - Dump memory: `( addr size -- )`
+- `0x05` - Get memory usage: `( -- used total )`
 
 ### Section `0x0004` - Assembler
 - `0x00` - Assemble `( completion? dest destSize source assembler* -- size success )`
@@ -97,3 +99,5 @@ This section has some space for user defined calls
 ### Section `0x0005` - Filesystem
 - `0x00` - Read file `( path -- size contents* success )`
 - `0x01` - Read text file `( path -- contents* success )`
+- `0x02` - Write file `( path size data -- success )`
+- `0x03` - Write text file `( path str -- success )`

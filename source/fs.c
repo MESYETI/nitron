@@ -78,3 +78,26 @@ Error FS_ReadFile(const char* path, size_t* size, uint8_t** res) {
 
 	return fs->readFile(fs, fsPath, size, res);
 }
+
+Error FS_WriteFile(const char* path, size_t size, uint8_t* data) {
+	FileSystem* fs = GetFS(path);
+
+	if (!fs) {
+		return N_ERROR_INVALID_DRIVE;
+	}
+
+	const char* fsPath = strchr(path, '/');
+
+	if (fsPath == NULL) {
+		fsPath = "";
+	}
+	else {
+		++ fsPath;
+	}
+
+	if (!fs->writeFile) {
+		return N_ERROR_FS_READ_ONLY;
+	}
+
+	return fs->writeFile(fs, fsPath, size, data);
+}
