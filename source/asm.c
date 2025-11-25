@@ -28,15 +28,11 @@ void Assembler_Init(Assembler* this, char* code, VM* vm) {
 }
 
 void Assembler_Free(Assembler* this) {
-	for (size_t i = 0; i < this->valuesLen; ++ i) {
-		Free(this->values[i].name);
-	}
 	if (this->values != NULL) {
 		Free(this->values);
 	}
 
 	for (size_t i = 0; i < this->macrosLen; ++ i) {
-		Free(this->macros[i].name);
 		Free(this->macros[i].contents);
 	}
 	if (this->macros != NULL) {
@@ -104,13 +100,10 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 		this->data    = false;
 	}
 
-	if (this->incomplete) {
+	/*if (this->incomplete) {
 		Free(this->incomplete);
 		this->incompleteLen = 0;
-	}
-
-	char* codeStart = this->code;
-	printf("ASSEMBLING: %s\n", this->code);
+	}*/ // what is this doing here???
 
 	static const InstDef insts[] = {
 		{"NOP",     0x00}, {"NOPi",     0x80},
@@ -341,6 +334,7 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 
 					if (!Assembler_Assemble(this, false, NULL)) {
 						this->binPtr = oldBinPtr;
+						return false;
 					}
 
 					Free(code);
@@ -563,11 +557,6 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 
 	if (size) {
 		*size = sz;
-	}
-
-	printf("RESULT: %s\n", codeStart);
-	for (size_t i = 0; i < sz; ++ i) {
-		printf("%.8X: %.2X\n", i, this->bin[i]);
 	}
 
 	this->vm->areaPtr = this->dataPtr;
