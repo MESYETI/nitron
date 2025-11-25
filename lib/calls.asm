@@ -15,8 +15,13 @@ define N_Free    00020002
 define N_Dump             00030000
 define N_UserCallAmount   00030001
 define N_RunOnNewInstance 00030002
+define N_ErrorToString    00030003
 
 ; Assembler
 define N_RunAssembler  00040000
 define N_NewAssembler  00040001
 define N_FreeAssembler 00040002
+
+; Filesystem
+define N_ReadFile     00050000
+define N_ReadTextFile 00050001

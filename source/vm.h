@@ -54,7 +54,7 @@ enum {
 #define VM_USER_CALLS_AMOUNT 512
 
 // not configurable
-#define VM_ECALL_SECTIONS 5
+#define VM_ECALL_SECTIONS 6
 
 typedef struct VM VM;
 

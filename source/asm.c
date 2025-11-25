@@ -15,6 +15,8 @@ void Assembler_InitBasic(Assembler* this) {
 	this->incomplete    = NULL;
 	this->incompleteLen = 0;
 	this->valueSize     = 0;
+	this->included      = NULL;
+	this->includedLen   = 0;
 }
 
 void Assembler_Init(Assembler* this, char* code, VM* vm) {
@@ -26,15 +28,11 @@ void Assembler_Init(Assembler* this, char* code, VM* vm) {
 }
 
 void Assembler_Free(Assembler* this) {
-	for (size_t i = 0; i < this->valuesLen; ++ i) {
-		Free(this->values[i].name);
-	}
 	if (this->values != NULL) {
 		Free(this->values);
 	}
 
 	for (size_t i = 0; i < this->macrosLen; ++ i) {
-		Free(this->macros[i].name);
 		Free(this->macros[i].contents);
 	}
 	if (this->macros != NULL) {
@@ -95,17 +93,17 @@ static void ReadStringToken(Assembler* this) {
 	this->code       += len + 1;
 }
 
-bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
+bool Assembler_Assemble(Assembler* this, bool init, size_t* size, bool completion) {
 	if (init) {
 		this->binPtr  = this->bin;
 		this->dataPtr = this->vm->areaPtr;
 		this->data    = false;
 	}
 
-	if (this->incomplete) {
+	/*if (this->incomplete) {
 		Free(this->incomplete);
 		this->incompleteLen = 0;
-	}
+	}*/ // what is this doing here???
 
 	static const InstDef insts[] = {
 		{"NOP",     0x00}, {"NOPi",     0x80},
@@ -202,6 +200,11 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 			++ this->code;
 			continue;
 		}
+		else if (this->code[0] == '(') {
+			while (this->code[0] && (this->code[0] != ')')) ++ this->code;
+			++ this->code;
+			continue;
+		}
 		else {
 			NextToken(this);
 		}
@@ -222,8 +225,23 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 				continue;
 			}
 			case ':': {
-				// TODO
-				break;
+				Macro macro;
+				strcpy(macro.name, &this->token[1]);
+
+				size_t contentsLen = strcspn(this->code, ":");
+				macro.contents     = SafeMalloc(contentsLen + 1);
+
+				strncpy(macro.contents, this->code, contentsLen);
+
+				macro.contents[contentsLen] = 0;
+				this->code += contentsLen + 1;
+
+				this->macros = SafeRealloc(
+					this->macros, (this->macrosLen + 1) * sizeof(Macro)
+				);
+				this->macros[this->macrosLen] = macro;
+				++ this->macrosLen;
+				continue;
 			}
 			case '@': {
 				this->values = SafeRealloc(
@@ -277,6 +295,22 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 				if (strcmp(this->token, "%include") == 0) {
 					ReadStringToken(this);
 
+					bool alreadyIncluded = false;
+					for (size_t i = 0; i < this->includedLen; ++ i) {
+						if (strcmp(this->token, this->included[i]) == 0) {
+							alreadyIncluded = true;
+							break;
+						}
+					}
+
+					if (alreadyIncluded) continue;
+
+					this->included = SafeRealloc(
+						this->included, (this->includedLen + 1) * ASM_TOKEN_SIZE
+					);
+					strcpy(this->included[this->includedLen], this->token);
+					++ this->includedLen;
+
 					char*    oldCode   = this->code;
 					uint8_t* oldBinPtr = this->binPtr;
 					size_t   size;
@@ -298,8 +332,10 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 
 					char* code = this->code;
 
-					if (!Assembler_Assemble(this, false, NULL)) {
+					if (!Assembler_Assemble(this, false, NULL, false)) {
 						this->binPtr = oldBinPtr;
+						Free(code);
+						return false;
 					}
 
 					Free(code);
@@ -463,7 +499,7 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 					char* oldCode = this->code;
 					this->code    = this->macros[i].contents;
 
-					Assembler_Assemble(this, false, NULL);
+					Assembler_Assemble(this, false, NULL, false);
 
 					this->code = oldCode;
 				}
@@ -492,34 +528,38 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size) {
 		}
 	}
 
-	for (size_t i = 0; i < this->incompleteLen; ++ i) {
-		bool found = false;
+	if (completion) {
+		for (size_t i = 0; i < this->incompleteLen; ++ i) {
+			bool found = false;
 
-		for (size_t j = 0; j < this->valuesLen; ++ j) {
-			if (strcmp(this->values[j].name, this->incomplete[i].name) == 0) {
-				found = true;
+			for (size_t j = 0; j < this->valuesLen; ++ j) {
+				if (strcmp(this->values[j].name, this->incomplete[i].name) == 0) {
+					found = true;
 
-				if (this->values[j].size != 4) {
-					fprintf(
-						stderr, "Incomplete value '%s' must be 4 bytes",
-						this->values[j].name
-					);
-					return false;
+					if (this->values[j].size != 4) {
+						fprintf(
+							stderr, "Incomplete value '%s' must be 4 bytes",
+							this->values[j].name
+						);
+						return false;
+					}
+
+					*this->incomplete[i].ptr = this->values[j].value;
+					break;
 				}
-
-				*this->incomplete[i].ptr = this->values[j].value;
-				break;
 			}
-		}
 
-		if (!found) {
-			fprintf(stderr, "Couldn't find value '%s'\n", this->incomplete[i].name);
-			return false;
+			if (!found) {
+				fprintf(stderr, "Couldn't find value '%s'\n", this->incomplete[i].name);
+				return false;
+			}
 		}
 	}
 
+	size_t sz = this->binPtr - this->bin;
+
 	if (size) {
-		*size = this->binPtr - this->bin;
+		*size = sz;
 	}
 
 	this->vm->areaPtr = this->dataPtr;

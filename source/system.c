@@ -15,7 +15,8 @@ void System_Run(void) {
 	InitAllocator();
 
 	puts("Nitron OS in-dev");
-	puts("Made by MESYETI\n");
+	puts("Made by MESYETI");
+	puts("This project is not made with AI and will never accept contributions by AI\n");
 
 	// create disks
 	Disk_Init();
@@ -92,7 +93,7 @@ void System_Run(void) {
 
 	Assembler assembler;
 	Assembler_Init(&assembler, file, &vm);
-	Assembler_Assemble(&assembler, true, &vm.codeSize);
+	Assembler_Assemble(&assembler, true, &vm.codeSize, true);
 	Free(file);
 
 	/*if (dumpRom) {

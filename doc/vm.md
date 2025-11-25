@@ -85,9 +85,15 @@ This section has some space for user defined calls
 - `0x00` - Dump: `( -- )`
 - `0x01` - Get user calls amount `( -- size )`
 - `0x02` - Run on new instance `( code codeSize areaSize stackSize areaPtr -- )`
+- `0x03` - Error to string `( error -- str* )`
+- `0x04` - Dump memory: `( addr size -- )`
 
 ### Section `0x0004` - Assembler
-- `0x00` - Assemble `( dest destSize source assembler* -- size success )`
+- `0x00` - Assemble `( completion? dest destSize source assembler* -- size success )`
 	- Source must be null terminated
 - `0x01` - New assembler `( -- asm*)`
 - `0x02` - Free assembler `( asm* -- )`
+
+### Section `0x0005` - Filesystem
+- `0x00` - Read file `( path -- size contents* success )`
+- `0x01` - Read text file `( path -- contents* success )`
