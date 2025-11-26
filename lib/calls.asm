@@ -19,11 +19,19 @@ define N_RunOnNewInstance 00030002
 define N_ErrorToString    00030003
 define N_DumpMemory       00030004
 define N_GetMemUsage      00030005
+define N_SetAreaPtr       00030006
+define N_GetAreaPtr       00030007
 
 ; Assembler
-define N_RunAssembler  00040000
-define N_NewAssembler  00040001
-define N_FreeAssembler 00040002
+define N_RunAssembler         00040000
+define N_NewAssembler         00040001
+define N_FreeAssembler        00040002
+define N_GetAsmBinPtr         00040003
+define N_SetAsmArea           00040004
+define N_GetAsmDataPtr        00040005
+define N_SetAsmDataPtr        00040006
+define N_SetAsmBin            00040007
+define N_FreeIncompleteAsmRef 00040008
 
 ; Filesystem
 define N_ReadFile      00050000

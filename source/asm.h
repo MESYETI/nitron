@@ -29,7 +29,6 @@ typedef struct {
 
 typedef struct {
 	char*        code;
-	VM*          vm;
 	Value*       values;
 	size_t       valuesLen;
 	Macro*       macros;
@@ -42,6 +41,8 @@ typedef struct {
 	size_t       valueSize;
 	char         (*included)[ASM_TOKEN_SIZE];
 	size_t       includedLen;
+	uint8_t*     area;
+	size_t       areaSize;
 
 	// internal state
 	char     token[ASM_TOKEN_SIZE];
@@ -53,6 +54,6 @@ typedef struct {
 void Assembler_InitBasic(Assembler* this);
 void Assembler_Init(Assembler* this, char* code, VM* vm);
 void Assembler_Free(Assembler* this);
-bool Assembler_Assemble(Assembler* this, bool init, size_t* size, bool completion);
+bool Assembler_Assemble(Assembler* this, size_t* size, bool completion);
 
 #endif

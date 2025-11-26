@@ -134,25 +134,28 @@ static void GetMemoryUsage(VM* vm) {
 	vm->dsp    += 2;
 }
 
+static void SetAreaPtr(VM* vm) {
+	-- vm->dsp;
+	vm->areaPtr = (uint8_t*) vm->dsp[0];
+}
+
+static void GetAreaPtr(VM* vm) {
+	vm->dsp[0] = (uint32_t) vm->areaPtr;
+	++ vm->dsp;
+}
+
 static void Assemble(VM* vm) {
 	-- vm->dsp;
 	Assembler* assembler = (Assembler*) *vm->dsp;
 	-- vm->dsp;
 	char* src = (char*) *vm->dsp;
 	-- vm->dsp;
-	size_t destSize = *vm->dsp;
-	-- vm->dsp;
-	uint8_t* dest = (uint8_t*) *vm->dsp;
-	-- vm->dsp;
 	bool completion = *vm->dsp != 0? true : false;
 
 	size_t size;
 
-	assembler->code   = src;
-	assembler->vm     = vm;
-	assembler->bin    = dest;
-	assembler->binLen = destSize;
-	bool success = Assembler_Assemble(assembler, true, &size, completion);
+	assembler->code = src;
+	bool success = Assembler_Assemble(assembler, &size, completion);
 
 	*vm->dsp = (uint32_t) size;
 	++ vm->dsp;
@@ -182,6 +185,58 @@ static void FreeAssembler(VM* vm) {
 
 	Assembler_Free(assembler);
 	Free(assembler);
+}
+
+static void GetAssemblerBinPtr(VM* vm) {
+	Assembler* assembler = (Assembler*) vm->dsp[-1];
+	vm->dsp[-1]          = (uint32_t)   assembler->binPtr;
+}
+
+static void SetAssemblerArea(VM* vm) {
+	vm->dsp -= 3;
+	uint8_t*   area      = (uint8_t*) vm->dsp[0];
+	size_t     size      = vm->dsp[1];
+	Assembler* assembler = (Assembler*) vm->dsp[2];
+
+	assembler->area     = area;
+	assembler->areaSize = size;
+	assembler->dataPtr  = area;
+}
+
+static void GetAssemblerDataPtr(VM* vm) {
+	Assembler* assembler = (Assembler*) vm->dsp[-1];
+	vm->dsp[-1]          = (uint32_t) assembler->dataPtr;
+}
+
+static void SetAssemblerDataPtr(VM* vm) {
+	vm->dsp -= 2;
+	uint8_t*   data      = (uint8_t*)   vm->dsp[0];
+	Assembler* assembler = (Assembler*) vm->dsp[1];
+
+	assembler->dataPtr = data;
+}
+
+static void SetAssemblerBinary(VM* vm) {
+	vm->dsp -= 3;
+	uint8_t*   bin       = (uint8_t*)   vm->dsp[0];
+	size_t     size      = (size_t)     vm->dsp[1];
+	Assembler* assembler = (Assembler*) vm->dsp[2];
+
+	assembler->bin    = bin;
+	assembler->binLen = size;
+	assembler->binCap = size;
+	assembler->binPtr = bin;
+}
+
+static void FreeIncompleteAssemblerRef(VM* vm) {
+	-- vm->dsp;
+	Assembler* assembler = (Assembler*) vm->dsp[0];
+
+	if (assembler->incomplete) {
+		Free(assembler->incomplete);
+		assembler->incomplete    = NULL;
+		assembler->incompleteLen = 0;
+	}
 }
 
 static void ReadFile(VM* vm) {
@@ -268,14 +323,22 @@ void Calls_InitVMCalls(VM* vm) {
 		/* 0x02 */ &RunNewInstance,
 		/* 0x03 */ &ErrorToStringCall,
 		/* 0x04 */ &DumpMemory,
-		/* 0x05 */ &GetMemoryUsage
+		/* 0x05 */ &GetMemoryUsage,
+		/* 0x06 */ &SetAreaPtr,
+		/* 0x07 */ &GetAreaPtr
 	};
 	ADD_SECTION(0x0003, sect0003);
 
 	static ECall sect0004[] = {
 		/* 0x00 */ &Assemble,
 		/* 0x01 */ &NewAssembler,
-		/* 0x02 */ &FreeAssembler
+		/* 0x02 */ &FreeAssembler,
+		/* 0x03 */ &GetAssemblerBinPtr,
+		/* 0x04 */ &SetAssemblerArea,
+		/* 0x05 */ &GetAssemblerDataPtr,
+		/* 0x06 */ &SetAssemblerDataPtr,
+		/* 0x07 */ &SetAssemblerBinary,
+		/* 0x08 */ &FreeIncompleteAssemblerRef
 	};
 	ADD_SECTION(0x0004, sect0004);
 

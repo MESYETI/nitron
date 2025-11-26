@@ -7,38 +7,40 @@
 	@programPtr reserve 4
 	@oldProgramPtr reserve 4
 %code
-	define PrintChar     00010000
-	define PrintHex      00010002
-	define PrintNTStr    00010004
-	define InputLine     00010005
-	define Assemble      00040000
-	define NewAssembler  00040001
-	define FreeAssembler 00040002
+	%include ":rom/lib/calls.asm"
 
 	#program WRITEi programPtr
 
 	; create assembler
-	ECALLi NewAssembler #assembler WRITE
+	ECALLi N_NewAssembler WRITEi assembler
 
-	#initMsg ECALLi PrintNTStr
+	; allocate an area for the assembler
+	$w #1000 ECALLi N_Alloc $w #1000 READi assembler ECALLi N_SetAsmArea
+
+	; allocate memory to store the binary
+	$w #1000 ECALLi N_Alloc DUP $w #1000 READi assembler ECALLi N_SetAsmBin
+	; and set the program pointer
+	WRITEi programPtr
+
+	#initMsg ECALLi N_PrintNTStr
 	@loop
+		; free incomplete array to prevent permanent errors
+		READi assembler ECALLi N_FreeIncompleteAsmRef
+
 		; read input
-		#prompt ECALLi PrintNTStr
-		#input #00000100 ECALLi InputLine
+		#prompt ECALLi N_PrintNTStr
+		#input #00000100 ECALLi N_InputLine
 
 		; assemble it somewhere
-		#00000001 #programPtr READ #00000400 #input #assembler READ ECALLi Assemble
+		#00000001 #input #assembler READ ECALLi N_RunAssembler
 		JZi fail ; restart if failed
-
-		DUP D2R ; save for advancing the program pointer
 
 		; add RET instruction
 		#programPtr READ ADD #0000002d SWAP WRITE8
 
 		; advance program pointer
-		R2D DUP
 		#programPtr READ WRITEi oldProgramPtr
-		#programPtr READ ADD #00000001 ADD WRITEi programPtr
+		READi assembler ECALLi N_GetAsmBinPtr WRITEi programPtr
 
 		; call user's code
 		#oldProgramPtr READ CALL
@@ -46,5 +48,5 @@
 		; loop again
 		JUMPi loop
 	@fail
-		{"Failed to assemble" 0a 00} ECALLi PrintNTStr
+		{"Failed to assemble" 0a 00} ECALLi N_PrintNTStr
 		JUMPi loop

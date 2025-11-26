@@ -89,12 +89,20 @@ This section has some space for user defined calls
 - `0x03` - Error to string `( error -- str* )`
 - `0x04` - Dump memory: `( addr size -- )`
 - `0x05` - Get memory usage: `( -- used total )`
+- `0x06` - Set area pointer: `( ptr -- )`
+- `0x07` - Get area pointer: `( -- ptr )`
 
 ### Section `0x0004` - Assembler
-- `0x00` - Assemble `( completion? dest destSize source assembler* -- size success )`
+- `0x00` - Assemble `( completion? source assembler* -- size success )`
 	- Source must be null terminated
 - `0x01` - New assembler `( -- asm*)`
 - `0x02` - Free assembler `( asm* -- )`
+- `0x03` - Get assembler binary pointer `( asm* -- bin* )`
+- `0x04` - Set assembler area `( area size asm* -- )`
+- `0x05` - Get assembler data pointer `( asm* -- data* )`
+- `0x06` - Set assembler data pointer `( data* asm* -- )`
+- `0x07` - Set assembler binary `( bin* size asm* -- )`
+- `0x08` - Free incomplete assembler references `( asm* -- )`
 
 ### Section `0x0005` - Filesystem
 - `0x00` - Read file `( path -- size contents* success )`

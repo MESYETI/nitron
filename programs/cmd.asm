@@ -28,4 +28,14 @@ JUMPi cmd/end
 	$w #a ECALLi N_PrintChar
 :free CALLi cmd/free :
 
+@cmd/read
+	ECALLi N_ReadTextFile DUP JNZi cmd/read/fail
+	DROP ECALLi N_PrintNTStr
+	RET
+@cmd/read/fail
+	{"Failed to read file: " 00} ECALLi N_PrintNTStr
+	ECALLi N_ErrorToString ECALLi N_PrintNTStr
+	$w #a ECALLi N_PrintChar
+:read CALLi cmd/read :
+
 @cmd/end

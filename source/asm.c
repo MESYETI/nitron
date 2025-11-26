@@ -17,15 +17,22 @@ void Assembler_InitBasic(Assembler* this) {
 	this->valueSize     = 0;
 	this->included      = NULL;
 	this->includedLen   = 0;
+	this->data          = false;
+	this->bin           = NULL;
+	this->binPtr        = NULL;
+	this->binLen        = 0;
+	this->binCap        = 0;
+	this->area          = NULL;
+	this->areaSize      = 0;
 }
 
 void Assembler_Init(Assembler* this, char* code, VM* vm) {
 	Assembler_InitBasic(this);
-	this->code   = code;
-	this->vm     = vm;
-	this->bin    = NULL;
-	this->binLen = 0;
-	this->binCap = 0;
+	this->code     = code;
+	this->area     = vm->areaPtr;
+	this->areaSize = vm->areaSize;
+	this->dataPtr  = this->area;
+	this->data     = false;
 }
 
 void Assembler_Free(Assembler* this) {
@@ -96,13 +103,13 @@ static void ReadStringToken(Assembler* this) {
 
 static bool AssertBinSpace(Assembler* this, size_t size) {
 	if (this->data) {
-		size_t bufSize = (this->dataPtr - this->vm->area) + size;
+		size_t bufSize = (this->dataPtr - this->area) + size;
 
-		if (bufSize > this->vm->areaSize) {
+		if (bufSize > this->areaSize) {
 			fprintf(stderr, "%s\n", this->code);
 			fprintf(
-				stderr, "Not enough room to allocate %d bytes in %d byte buffer\n",
-				bufSize, this->vm->areaSize
+				stderr, "Not enough room to allocate %u bytes in %u byte buffer\n",
+				bufSize, this->areaSize
 			);
 			return false;
 		}
@@ -119,13 +126,7 @@ static bool AssertBinSpace(Assembler* this, size_t size) {
 	return true;
 }
 
-bool Assembler_Assemble(Assembler* this, bool init, size_t* size, bool completion) {
-	if (init) {
-		this->binPtr  = this->bin;
-		this->dataPtr = this->vm->areaPtr;
-		this->data    = false;
-	}
-
+bool Assembler_Assemble(Assembler* this, size_t* size, bool completion) {
 	/*if (this->incomplete) {
 		Free(this->incomplete);
 		this->incompleteLen = 0;
@@ -275,11 +276,6 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size, bool completio
 				this->values[this->valuesLen].size  = 4;
 
 				if (this->data) {
-					if (!this->vm) {
-						fprintf(stderr, "Cannot allocate data without a VM\n");
-						return false;
-					}
-
 					this->values[this->valuesLen].value = (uint32_t) this->dataPtr;
 				}
 				else {
@@ -355,7 +351,7 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size, bool completio
 
 					char* code = this->code;
 
-					if (!Assembler_Assemble(this, false, NULL, false)) {
+					if (!Assembler_Assemble(this, NULL, false)) {
 						this->binPtr = oldBinPtr;
 						Free(code);
 						return false;
@@ -522,7 +518,7 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size, bool completio
 					char* oldCode = this->code;
 					this->code    = this->macros[i].contents;
 
-					Assembler_Assemble(this, false, NULL, false);
+					Assembler_Assemble(this, NULL, false);
 
 					this->code = oldCode;
 				}
@@ -584,8 +580,6 @@ bool Assembler_Assemble(Assembler* this, bool init, size_t* size, bool completio
 	if (size) {
 		*size = sz;
 	}
-
-	this->vm->areaPtr = this->dataPtr;
 
 	return true;
 }

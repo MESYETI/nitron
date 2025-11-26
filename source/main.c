@@ -14,9 +14,7 @@ VM vm;
 int main(int argc, char** argv) {
 	InitAllocator();
 
-	puts("Nitron OS in-dev");
-	puts("Made by MESYETI");
-	puts("This project is not made with AI and will never accept contributions by AI\n");
+	puts("Nitron in-dev\n");
 
 	// create disks
 	Disk_Init();
@@ -115,9 +113,10 @@ int main(int argc, char** argv) {
 
 	Assembler assembler;
 	Assembler_Init(&assembler, file, &vm);
-	Assembler_Assemble(&assembler, true, &vm.codeSize, true);
+	if (!Assembler_Assemble(&assembler, &vm.codeSize, true)) return 1;
+	vm.areaPtr = assembler.dataPtr;
+	vm.code    = assembler.bin;
 	Assembler_Free(&assembler);
-	vm.code = assembler.bin;
 	Free(file);
 
 	/*if (dumpRom) {
