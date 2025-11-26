@@ -115,6 +115,8 @@ static bool AssertBinSpace(Assembler* this, size_t size) {
 		}
 	}
 	else {
+		this->binLen += size;
+
 		if ((this->binPtr - this->bin) + size > this->binCap) {
 			size_t offset  = this->binPtr - this->bin;
 			this->bin      = SafeRealloc(this->bin, this->binCap + size + 256);
@@ -575,10 +577,8 @@ bool Assembler_Assemble(Assembler* this, size_t* size, bool completion) {
 		}
 	}
 
-	size_t sz = this->binPtr - this->bin;
-
 	if (size) {
-		*size = sz;
+		*size = this->binLen;
 	}
 
 	return true;

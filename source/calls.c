@@ -223,7 +223,7 @@ static void SetAssemblerBinary(VM* vm) {
 	Assembler* assembler = (Assembler*) vm->dsp[2];
 
 	assembler->bin    = bin;
-	assembler->binLen = size;
+	assembler->binLen = 0;
 	assembler->binCap = size;
 	assembler->binPtr = bin;
 }
@@ -237,6 +237,13 @@ static void FreeIncompleteAssemblerRef(VM* vm) {
 		assembler->incomplete    = NULL;
 		assembler->incompleteLen = 0;
 	}
+}
+
+static void ResetAssemblerBinLen(VM* vm) {
+	-- vm->dsp;
+	Assembler* assembler = (Assembler*) vm->dsp[0];
+
+	assembler->binLen = 0;
 }
 
 static void ReadFile(VM* vm) {
@@ -338,7 +345,8 @@ void Calls_InitVMCalls(VM* vm) {
 		/* 0x05 */ &GetAssemblerDataPtr,
 		/* 0x06 */ &SetAssemblerDataPtr,
 		/* 0x07 */ &SetAssemblerBinary,
-		/* 0x08 */ &FreeIncompleteAssemblerRef
+		/* 0x08 */ &FreeIncompleteAssemblerRef,
+		/* 0x09 */ &ResetAssemblerBinLen
 	};
 	ADD_SECTION(0x0004, sect0004);
 

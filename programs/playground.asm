@@ -27,6 +27,9 @@
 		; free incomplete array to prevent permanent errors
 		READi assembler ECALLi N_FreeIncompleteAsmRef
 
+		; reset binary length
+		READi assembler ECALLi N_ResetAsmBinLen
+
 		; read input
 		#prompt ECALLi N_PrintNTStr
 		#input #00000100 ECALLi N_InputLine

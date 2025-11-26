@@ -32,6 +32,7 @@ define N_GetAsmDataPtr        00040005
 define N_SetAsmDataPtr        00040006
 define N_SetAsmBin            00040007
 define N_FreeIncompleteAsmRef 00040008
+define N_ResetAsmBinLen       00040009
 
 ; Filesystem
 define N_ReadFile      00050000
