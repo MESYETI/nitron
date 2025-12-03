@@ -9,6 +9,16 @@ void* SafeMalloc(size_t size);
 void* SafeRealloc(void* ptr, size_t size);
 
 // custom memory allocator
+typedef struct MemBlock MemBlock;
+
+struct MemBlock {
+	char      magic[7];
+	MemBlock* prev;
+	MemBlock* next;
+	size_t    size;
+	bool      free;
+};
+
 typedef struct {
 	bool   available;
 	size_t used;

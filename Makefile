@@ -19,6 +19,10 @@ else
 	ifeq ($(SYS_ALLOC), y)
 		override CFLAGS += -DN_SYS_ALLOC
 	endif
+
+	ifeq ($(REI_ALLOC), y)
+		override CFLAGS += -DN_REI_ALLOC
+	endif
 endif
 
 .SECONDEXPANSION:

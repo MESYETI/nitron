@@ -91,6 +91,7 @@ This section has some space for user defined calls
 - `0x05` - Get memory usage: `( -- used total )`
 - `0x06` - Set area pointer: `( ptr -- )`
 - `0x07` - Get area pointer: `( -- ptr )`
+- `0x08` - Nothing `( -- )`
 
 ### Section `0x0004` - Assembler
 - `0x00` - Assemble `( completion? source assembler* -- size success )`
@@ -103,6 +104,8 @@ This section has some space for user defined calls
 - `0x06` - Set assembler data pointer `( data* asm* -- )`
 - `0x07` - Set assembler binary `( bin* size asm* -- )`
 - `0x08` - Free incomplete assembler references `( asm* -- )`
+- `0x09` - Reset assembler binary length `( asm* -- )`
+- `0x0a` - Set assembler binary pointer `( bin* asm* -- )`
 
 ### Section `0x0005` - Filesystem
 - `0x00` - Read file `( path -- size contents* success )`

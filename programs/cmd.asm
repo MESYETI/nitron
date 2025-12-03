@@ -16,6 +16,7 @@ JUMPi cmd/end
 	{"Failed to create file: " 00} ECALLi N_PrintNTStr
 	ECALLi N_ErrorToString ECALLi N_PrintNTStr
 	$w #a ECALLi N_PrintChar
+	RET
 :touch CALLi cmd/touch :
 
 @cmd/free
@@ -26,6 +27,7 @@ JUMPi cmd/end
 
 	ECALLi N_PrintDec {" bytes used"  00} ECALLi N_PrintNTStr
 	$w #a ECALLi N_PrintChar
+	RET
 :free CALLi cmd/free :
 
 @cmd/read
@@ -36,6 +38,7 @@ JUMPi cmd/end
 	{"Failed to read file: " 00} ECALLi N_PrintNTStr
 	ECALLi N_ErrorToString ECALLi N_PrintNTStr
 	$w #a ECALLi N_PrintChar
+	RET
 :read CALLi cmd/read :
 
 @cmd/end

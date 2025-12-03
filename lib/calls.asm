@@ -21,6 +21,7 @@ define N_DumpMemory       00030004
 define N_GetMemUsage      00030005
 define N_SetAreaPtr       00030006
 define N_GetAreaPtr       00030007
+define N_Nothing          00030008
 
 ; Assembler
 define N_RunAssembler         00040000
@@ -33,6 +34,7 @@ define N_SetAsmDataPtr        00040006
 define N_SetAsmBin            00040007
 define N_FreeIncompleteAsmRef 00040008
 define N_ResetAsmBinLen       00040009
+define N_SetAsmBinPtr         0004000a
 
 ; Filesystem
 define N_ReadFile      00050000

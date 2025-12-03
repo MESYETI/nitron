@@ -2,14 +2,11 @@
 	@initMsg "Nitron Assembly Playground" 0a 00
 	@prompt "> " 00
 	@input reserve 256
-	@program reserve 8192
 	@assembler reserve 4
 	@programPtr reserve 4
 	@oldProgramPtr reserve 4
 %code
 	%include ":rom/lib/calls.asm"
-
-	#program WRITEi programPtr
 
 	; create assembler
 	ECALLi N_NewAssembler WRITEi assembler
@@ -44,6 +41,11 @@
 		; advance program pointer
 		#programPtr READ WRITEi oldProgramPtr
 		READi assembler ECALLi N_GetAsmBinPtr WRITEi programPtr
+
+		READi programPtr ECALLi N_PrintHex
+		$w #a ECALLi N_PrintChar
+		READi oldProgramPtr ECALLi N_PrintHex
+		$w #a ECALLi N_PrintChar
 
 		; call user's code
 		#oldProgramPtr READ CALL

@@ -2,6 +2,12 @@
 #include "vm.h"
 #include "mem.h"
 
+static void Jump(VM* vm, uint8_t* addr) {
+	vm->ip = addr;
+
+	printf("Jumping to %p, %p\n", addr, vm->ip);
+}
+
 #define INST(NAME) static void Inst_##NAME(VM* vm)
 
 INST(Nop) {
@@ -83,14 +89,14 @@ INST(Write) {
 
 INST(Jump) {
 	-- vm->dsp;
-	vm->ip = (uint8_t*) *vm->dsp;
+	Jump(vm, (uint8_t*) *vm->dsp);
 }
 
 INST(Jnz) {
 	vm->dsp -= 2;
 
 	if (vm->dsp[0] != 0) {
-		vm->ip = (uint8_t*) vm->dsp[1];
+		Jump(vm, (uint8_t*) vm->dsp[1]);
 	}
 }
 
@@ -149,7 +155,7 @@ INST(Jz) {
 	vm->dsp -= 2;
 
 	if (vm->dsp[0] == 0) {
-		vm->ip = (uint8_t*) vm->dsp[1];
+		Jump(vm, (uint8_t*) vm->dsp[1]);
 	}
 }
 
@@ -231,12 +237,12 @@ INST(Call) {
 	-- vm->dsp;
 	*vm->rsp = (uint32_t) vm->ip;
 	++ vm->rsp;
-	vm->ip = (uint8_t*) *vm->dsp;
+	Jump(vm, (uint8_t*) *vm->dsp);
 }
 
 INST(Ret) {
 	-- vm->rsp;
-	vm->ip = (uint8_t*) *vm->rsp;
+	Jump(vm, (uint8_t*) *vm->rsp);
 }
 
 static uint8_t  area[VM_AREA_SIZE];
@@ -309,7 +315,8 @@ void VM_Run(VM* vm) {
 	vm->ip = vm->code;
 
 	while (true) {
-		uint8_t inst = *vm->ip;
+		uint8_t* ip   = vm->ip;
+		uint8_t  inst = *vm->ip;
 		++ vm->ip;
 
 		if (inst & 0x80) { // immediate
@@ -321,7 +328,7 @@ void VM_Run(VM* vm) {
 		if (!vm->insts[inst & 0x7F]) {
 			fprintf(
 				stderr, "Invalid opcode %.2X at %p\n",
-				inst & 0x7F, vm->ip
+				inst & 0x7F, ip
 			);
 			exit(1);
 		}
