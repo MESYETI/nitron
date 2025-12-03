@@ -122,30 +122,10 @@ static bool AssertBinSpace(Assembler* this, size_t size) {
 			this->bin      = SafeRealloc(this->bin, this->binCap + size + 256);
 			this->binCap  += 256 + size;
 			this->binPtr   = this->bin + offset;
-			puts("RESIZED");
 		}
 	}
 
 	return true;
-}
-
-static void Debug(Assembler* this, const char* src, const char* name) {
-	printf("=== %s %s ===\n", src, name);
-	printf("START %p\n", this->values);
-	printf("BLOCK %p\n", ((uint8_t*) this->values) - sizeof(MemBlock));
-	printf("END   %p\n", this->values + this->valuesLen);
-	DumpAllocator();
-
-	for (size_t i = 0; i < this->valuesLen; ++ i) {
-		if (strcmp(this->values[i].name, "N_ResetAsmBinLen") == 0) {
-			printf("VALUES CONTAINS N_ResetAsmBinLen at %p\n", this->values[i].name);
-		}
-		if (strcmp(this->values[i].name, "NITRON") == 0) {
-			printf("VALUES CONTAINS NITRON at %p\n", this->values[i].name);
-		}
-	}
-
-	puts("===== END =====");
 }
 
 bool Assembler_Assemble(Assembler* this, size_t* size, bool completion) {
@@ -305,7 +285,6 @@ bool Assembler_Assemble(Assembler* this, size_t* size, bool completion) {
 				}
 
 				++ this->valuesLen;
-				Debug(this, "LABEL", &this->token[1]);
 				continue;
 			}
 			case '"': {
@@ -467,16 +446,8 @@ bool Assembler_Assemble(Assembler* this, size_t* size, bool completion) {
 				this->values, (this->valuesLen + 1) * sizeof(Value)
 			);
 
-			if (strcmp(value.name, "N_ResetAsmBinLen") == 0) {
-				puts("HERE!");
-			}
-
-			printf("Defining value %s = %d\n", value.name, value.value);
-
 			this->values[this->valuesLen] = value;
 			++ this->valuesLen;
-
-			Debug(this, "DEFINE", value.name);
 		}
 		else if (strcmp(this->token, "reserve") == 0) {
 			NextToken(this);
@@ -583,7 +554,6 @@ bool Assembler_Assemble(Assembler* this, size_t* size, bool completion) {
 			bool found = false;
 
 			for (size_t j = 0; j < this->valuesLen; ++ j) {
-				printf("Checking '%s' for '%s'\n", this->values[j].name, this->incomplete[i].name);
 				if (strcmp(this->values[j].name, this->incomplete[i].name) == 0) {
 					found = true;
 
@@ -602,7 +572,6 @@ bool Assembler_Assemble(Assembler* this, size_t* size, bool completion) {
 
 			if (!found) {
 				fprintf(stderr, "Couldn't find value '%s'\n", this->incomplete[i].name);
-				DumpAllocator();
 				return false;
 			}
 		}

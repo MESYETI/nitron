@@ -48,14 +48,11 @@ void InitAllocator(void) {
 			exit(1);
 		}
 
-		printf("Writing NITRON to %p\n", base->magic);
 		strcpy(base->magic, "NITRON");
 		base->prev = NULL;
 		base->next = NULL;
 		base->size = zoneSize - sizeof(MemBlock);
 		base->free = true;
-
-		DumpAllocator();
 	#endif
 }
 
@@ -99,7 +96,6 @@ void* Alloc(size_t size) {
 			(nextBlock->size - size >= sizeof(MemBlock) + MIN_LEFTOVER_SIZE)
 		) {
 			MemBlock* leftover = (MemBlock*) (BLOCK_DATA(nextBlock) + size);
-			printf("Writing NITRON to %p\n", leftover->magic);
 			strcpy(leftover->magic, "NITRON");
 			leftover->size     = nextBlock->size - size - sizeof(MemBlock);
 			leftover->free     = true;
@@ -150,10 +146,10 @@ void Free(void* ptr) {
 		if (block->next) if (block->next->free) {
 			MergeNext(block);
 		}
-		if (block->prev) if (block->prev->free) {
-			block = block->prev;
-			MergeNext(block);
-		}
+		// if (block->prev) if (block->prev->free) { // removed until bug resolved
+		// 	block = block->prev;
+		// 	MergeNext(block);
+		// }
 
 		nextBlock = block;
 	#endif

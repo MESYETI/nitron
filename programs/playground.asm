@@ -42,11 +42,6 @@
 		#programPtr READ WRITEi oldProgramPtr
 		READi assembler ECALLi N_GetAsmBinPtr WRITEi programPtr
 
-		READi programPtr ECALLi N_PrintHex
-		$w #a ECALLi N_PrintChar
-		READi oldProgramPtr ECALLi N_PrintHex
-		$w #a ECALLi N_PrintChar
-
 		; call user's code
 		#oldProgramPtr READ CALL
 

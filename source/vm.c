@@ -4,8 +4,6 @@
 
 static void Jump(VM* vm, uint8_t* addr) {
 	vm->ip = addr;
-
-	printf("Jumping to %p, %p\n", addr, vm->ip);
 }
 
 #define INST(NAME) static void Inst_##NAME(VM* vm)
