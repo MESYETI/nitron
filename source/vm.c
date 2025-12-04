@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "vm.h"
 #include "mem.h"
 
@@ -333,4 +334,22 @@ void VM_Run(VM* vm) {
 
 		vm->insts[inst & 0x7F](vm);
 	}
+}
+
+VM_StateStore VM_SaveState(VM* vm) {
+	VM_StateStore ret;
+	ret.areaPtr = vm->areaPtr;
+	ret.ip      = vm->ip;
+	ret.dsp     = vm->dsp;
+	ret.rsp     = vm->rsp;
+	memcpy(ret.reg, vm->reg, sizeof(vm->reg));
+	return ret;
+}
+
+void VM_LoadState(VM* vm, VM_StateStore* state) {
+	vm->areaPtr = state->areaPtr;
+	vm->ip      = state->ip;
+	vm->dsp     = state->dsp;
+	vm->rsp     = state->rsp;
+	memcpy(vm->reg, state->reg, sizeof(vm->reg));
 }

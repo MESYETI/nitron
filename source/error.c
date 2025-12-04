@@ -14,6 +14,7 @@ const char* ErrorToString(Error err) {
 		case N_ERROR_NOT_A_FILE:            return "Not a file";
 		case N_ERROR_INVALID_DRIVE:         return "Invalid drive";
 		case N_ERROR_OUT_OF_MEMORY:         return "Out of memory";
+		case N_ERROR_GENERIC:               return "Generic/unknown";
 		default: return "???";
 	}
 }

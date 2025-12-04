@@ -92,6 +92,7 @@ This section has some space for user defined calls
 - `0x06` - Set area pointer: `( ptr -- )`
 - `0x07` - Get area pointer: `( -- ptr )`
 - `0x08` - Nothing `( -- )`
+- `0x09` - Run file `( path -- success )`
 
 ### Section `0x0004` - Assembler
 - `0x00` - Assemble `( completion? source assembler* -- size success )`

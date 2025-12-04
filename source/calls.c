@@ -148,6 +148,49 @@ static void Nothing(VM* vm) {
 	(void) vm;
 }
 
+static void RunFile(VM* vm) {
+	const char* path = (const char*) vm->dsp[-1];
+	vm->dsp[-1]      = N_ERROR_SUCCESS;
+
+	char*  file;
+	size_t size;
+	Error  success = FS_ReadFile(path, &size, (uint8_t**) &file);
+
+	if (success != N_ERROR_SUCCESS) {
+		vm->dsp[-1] = success;
+		return;
+	}
+
+	file = Realloc(file, size + 1);
+
+	if (file == NULL) {
+		vm->dsp[-1] = N_ERROR_OUT_OF_MEMORY;
+		return;
+	}
+
+	file[size] = 0;	
+
+	size_t oldCodeSize = vm->codeSize;
+
+	Assembler assembler;
+	Assembler_Init(&assembler, file, vm);
+	if (!Assembler_Assemble(&assembler, &vm->codeSize, true)) {
+		vm->dsp[-1] = N_ERROR_GENERIC;
+		return;
+	}
+
+	VM_StateStore state = VM_SaveState(vm);
+	vm->areaPtr = assembler.dataPtr;
+	vm->code    = assembler.bin;
+	Assembler_Free(&assembler);
+	Free(file);
+
+	VM_Run(vm);
+	Free(vm->code);
+	VM_LoadState(vm, &state);
+	vm->codeSize = oldCodeSize;
+}
+
 static void Assemble(VM* vm) {
 	-- vm->dsp;
 	Assembler* assembler = (Assembler*) *vm->dsp;
@@ -345,7 +388,8 @@ void Calls_InitVMCalls(VM* vm) {
 		/* 0x05 */ &GetMemoryUsage,
 		/* 0x06 */ &SetAreaPtr,
 		/* 0x07 */ &GetAreaPtr,
-		/* 0x08 */ &Nothing
+		/* 0x08 */ &Nothing,
+		/* 0x09 */ &RunFile
 	};
 	ADD_SECTION(0x0003, sect0003);
 

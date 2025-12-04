@@ -119,8 +119,8 @@ static bool AssertBinSpace(Assembler* this, size_t size) {
 
 		if ((this->binPtr - this->bin) + size > this->binCap) {
 			size_t offset  = this->binPtr - this->bin;
-			this->bin      = SafeRealloc(this->bin, this->binCap + size + 256);
-			this->binCap  += 256 + size;
+			this->bin      = SafeRealloc(this->bin, this->binCap + size + 32);
+			this->binCap  += 32 + size;
 			this->binPtr   = this->bin + offset;
 		}
 	}
@@ -274,14 +274,18 @@ bool Assembler_Assemble(Assembler* this, size_t* size, bool completion) {
 					this->values, (this->valuesLen + 1) * sizeof(Value)
 				);
 
-				strcpy(this->values[this->valuesLen].name, &this->token[1]);
-				this->values[this->valuesLen].size  = 4;
+				Value* value = &this->values[this->valuesLen];
+
+				strcpy(value->name, &this->token[1]);
+				value->size = 4;
 
 				if (this->data) {
-					this->values[this->valuesLen].value = (uint32_t) this->dataPtr;
+					value->value = (uint32_t) this->dataPtr;
+					value->code  = false;
 				}
 				else {
-					this->values[this->valuesLen].value = (uint32_t) this->binPtr;
+					value->value = (uint32_t) this->binPtr;
+					value->code  = true;
 				}
 
 				++ this->valuesLen;
@@ -380,31 +384,32 @@ bool Assembler_Assemble(Assembler* this, size_t* size, bool completion) {
 		}
 
 		if (strspn(this->token, "0123456789abcdef") == len) {
-			uint8_t** dest = this->data? &this->dataPtr : &this->binPtr;
-			size_t    size = this->valueSize == 0? len : this->valueSize;
+			size_t size = this->valueSize == 0? len : this->valueSize;
 
 			if (this->valueSize != 0) {
 				this->valueSize = 0;
 			}
 
 			switch (size) {
-				case 2: { // byte
-					ASSERT_BIN_SPACE(1);
+				case 2: ASSERT_BIN_SPACE(1); break;
+				case 4: ASSERT_BIN_SPACE(2); break;
+				case 8: ASSERT_BIN_SPACE(4); break;
+			}
 
+			uint8_t** dest = this->data? &this->dataPtr : &this->binPtr;
+
+			switch (size) {
+				case 2: { // byte
 					*((uint8_t*) *dest) = (uint8_t) strtol(this->token, NULL, 16);
 					++ *dest;
 					break;
 				}
 				case 4: { // short
-					ASSERT_BIN_SPACE(2);
-
 					*((uint16_t*) *dest) = (uint16_t) strtol(this->token, NULL, 16);
 					*dest += 2;
 					break;
 				}
 				case 8: { // word
-					ASSERT_BIN_SPACE(4);
-
 					*((uint32_t*) *dest) = (uint32_t) strtol(this->token, NULL, 16);
 					*dest += 4;
 					break;
@@ -481,26 +486,24 @@ bool Assembler_Assemble(Assembler* this, size_t* size, bool completion) {
 				uint8_t** dest = this->data? &this->dataPtr : &this->binPtr;
 
 				if (strcmp(this->values[i].name, this->token) == 0) {
+					// prevent broken addresses from being put into the binary
+					if (this->values[i].code) break;
+
 					isValue = true;
+					ASSERT_BIN_SPACE(this->values[i].size);
 
 					switch (this->values[i].size) {
 						case 1: { // byte
-							ASSERT_BIN_SPACE(1);
-
 							*((uint8_t*) *dest) = (uint8_t) this->values[i].value;
 							++ *dest;
 							break;
 						}
 						case 2: { // short
-							ASSERT_BIN_SPACE(2);
-
 							*((uint16_t*) *dest) = (uint16_t) this->values[i].value;
 							*dest += 2;
 							break;
 						}
 						case 4: { // word
-							ASSERT_BIN_SPACE(4);
-
 							*((uint32_t*) *dest) = this->values[i].value;
 							*dest += 4;
 							break;
@@ -539,8 +542,11 @@ bool Assembler_Assemble(Assembler* this, size_t* size, bool completion) {
 					this->incomplete, (this->incompleteLen + 1) * sizeof(IncompValue)
 				);
 
-				strcpy(this->incomplete[this->incompleteLen].name, this->token);
-				this->incomplete[this->incompleteLen].ptr = (uint32_t*) this->binPtr;
+				IncompValue* value = &this->incomplete[this->incompleteLen];
+
+				strcpy(value->name, this->token);
+				value->data   = this->data;
+				value->offset = this->binPtr - this->bin;
 
 				this->binPtr += 4;
 
@@ -565,7 +571,16 @@ bool Assembler_Assemble(Assembler* this, size_t* size, bool completion) {
 						return false;
 					}
 
-					*this->incomplete[i].ptr = this->values[j].value;
+					uint32_t* ptr;
+
+					if (this->incomplete[i].data) {
+						ptr = (uint32_t*) (this->area + this->incomplete[i].offset);
+					}
+					else {
+						ptr = (uint32_t*) (this->bin + this->incomplete[i].offset);
+					}
+
+					*ptr = this->values[j].value;
 					break;
 				}
 			}
@@ -579,6 +594,10 @@ bool Assembler_Assemble(Assembler* this, size_t* size, bool completion) {
 
 	if (size) {
 		*size = this->binLen;
+
+		/*for (size_t i = 0; i < *size; ++ i) {
+			printf("%.8X: %.2X\n", i, this->bin[i]);
+		}*/
 	}
 
 	return true;

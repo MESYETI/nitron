@@ -100,7 +100,7 @@ int main(int argc, char** argv) {
 	VM_Init(&vm);
 	Calls_InitVMCalls(&vm);
 
-	char*  file;
+	char* file;
 	success = FS_ReadFile(autoStart, &size, (uint8_t**) &file);
 
 	if (success != N_ERROR_SUCCESS) {

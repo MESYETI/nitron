@@ -13,13 +13,15 @@ typedef struct {
 
 typedef struct {
 	char     name[ASM_TOKEN_SIZE];
+	bool     code; // code label?
 	uint8_t  size;
 	uint32_t value;
 } Value;
 
 typedef struct {
-	char      name[ASM_TOKEN_SIZE];
-	uint32_t* ptr;
+	char   name[ASM_TOKEN_SIZE];
+	bool   data;
+	size_t offset;
 } IncompValue;
 
 typedef struct {

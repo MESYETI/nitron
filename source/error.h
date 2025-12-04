@@ -15,7 +15,8 @@ enum {
 	N_ERROR_OUT_OF_BOUNDS_DISK    = 8,
 	N_ERROR_NOT_A_FILE            = 9,
 	N_ERROR_INVALID_DRIVE         = 10,
-	N_ERROR_OUT_OF_MEMORY         = 11
+	N_ERROR_OUT_OF_MEMORY         = 11,
+	N_ERROR_GENERIC               = 12
 };
 
 typedef uint32_t Error;

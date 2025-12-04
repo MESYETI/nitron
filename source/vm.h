@@ -55,6 +55,14 @@ enum {
 // not configurable
 #define VM_ECALL_SECTIONS 6
 
+typedef struct {
+	uint8_t*  areaPtr;
+	uint8_t*  ip;
+	uint32_t* dsp;
+	uint32_t* rsp;
+	uint32_t  reg[8];
+} VM_StateStore;
+
 typedef struct VM VM;
 
 typedef void (*ECall)(VM*);
@@ -84,5 +92,8 @@ struct VM {
 void VM_Init(VM* vm);
 void VM_Free(VM* vm);
 void VM_Run(VM* vm);
+
+VM_StateStore VM_SaveState(VM* vm);
+void          VM_LoadState(VM* vm, VM_StateStore* state);
 
 #endif
