@@ -14,11 +14,6 @@
 	; allocate an area for the assembler
 	$w #1000 ECALLi N_Alloc $w #1000 READi assembler ECALLi N_SetAsmArea
 
-	; allocate memory to store the binary
-	$w #1000 ECALLi N_Alloc DUP $w #1000 READi assembler ECALLi N_SetAsmBin
-	; and set the program pointer
-	WRITEi programPtr
-
 	#initMsg ECALLi N_PrintNTStr
 	@loop
 		; free incomplete array to prevent permanent errors
@@ -37,10 +32,6 @@
 
 		; add RET instruction
 		#programPtr READ ADD #0000002d SWAP WRITE8
-
-		; advance program pointer
-		#programPtr READ WRITEi oldProgramPtr
-		READi assembler ECALLi N_GetAsmBinPtr WRITEi programPtr
 
 		; call user's code
 		#oldProgramPtr READ CALL

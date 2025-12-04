@@ -301,6 +301,27 @@ static void SetAssemblerBinPtr(VM* vm) {
 	assembler->binPtr = bin;
 }
 
+static void ExtendAssemblerBinary(VM* vm) {
+	vm->dsp -= 1;
+	size_t     size      = (size_t)     vm->dsp[-1];
+	Assembler* assembler = (Assembler*) vm->dsp[0];
+
+	vm->dsp[-1] = N_ERROR_SUCCESS;
+
+	if (!Assembler_AssertBinSpace(assembler, size)) {
+		vm->dsp[-1] = N_ERROR_GENERIC;
+		return;
+	}
+}
+
+static void SetAssemblerMode(VM* vm) {
+	vm->dsp -= 2;
+	uint32_t   mode      = vm->dsp[0];
+	Assembler* assembler = (Assembler*) vm->dsp[1];
+
+	assembler->data = mode != 0;
+}
+
 static void ReadFile(VM* vm) {
 	-- vm->dsp;
 	const char* path = (const char*) *vm->dsp;
@@ -404,7 +425,9 @@ void Calls_InitVMCalls(VM* vm) {
 		/* 0x07 */ &SetAssemblerBinary,
 		/* 0x08 */ &FreeIncompleteAssemblerRef,
 		/* 0x09 */ &ResetAssemblerBinLen,
-		/* 0x0a */ &SetAssemblerBinPtr
+		/* 0x0a */ &SetAssemblerBinPtr,
+		/* 0x0b */ &ExtendAssemblerBinary,
+		/* 0x0c */ &SetAssemblerMode
 	};
 	ADD_SECTION(0x0004, sect0004);
 

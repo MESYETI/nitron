@@ -101,7 +101,7 @@ static void ReadStringToken(Assembler* this) {
 	this->code       += len + 1;
 }
 
-static bool AssertBinSpace(Assembler* this, size_t size) {
+bool Assembler_AssertBinSpace(Assembler* this, size_t size) {
 	if (this->data) {
 		size_t bufSize = (this->dataPtr - this->area) + size;
 
@@ -178,7 +178,7 @@ bool Assembler_Assemble(Assembler* this, size_t* size, bool completion) {
 	};
 
 	#define ASSERT_BIN_SPACE(SIZE) do { \
-		if (!AssertBinSpace(this, (SIZE))) { \
+		if (!Assembler_AssertBinSpace(this, (SIZE))) { \
 			fprintf(stderr, "Not enough room for binary\n"); \
 			return false; \
 		} \
@@ -284,7 +284,7 @@ bool Assembler_Assemble(Assembler* this, size_t* size, bool completion) {
 					value->code  = false;
 				}
 				else {
-					value->value = (uint32_t) this->binPtr;
+					value->value = (uint32_t) (this->binPtr - this->bin);
 					value->code  = true;
 				}
 
@@ -435,6 +435,8 @@ bool Assembler_Assemble(Assembler* this, size_t* size, bool completion) {
 				this->valueSize = 0;
 			}
 
+			value.code = false;
+
 			switch (size) {
 				case 2: value.size = 1; break;
 				case 4: value.size = 2; break;
@@ -580,7 +582,12 @@ bool Assembler_Assemble(Assembler* this, size_t* size, bool completion) {
 						ptr = (uint32_t*) (this->bin + this->incomplete[i].offset);
 					}
 
-					*ptr = this->values[j].value;
+					if (this->values[j].code) {
+						*ptr = (uint32_t) (&this->bin[this->values[j].value]);
+					}
+					else {
+						*ptr = this->values[j].value;
+					}
 					break;
 				}
 			}
