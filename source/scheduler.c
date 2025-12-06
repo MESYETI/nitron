@@ -108,26 +108,45 @@ Process* Scheduler_StartProcess(Error* error, const char* path) {
 	return ret;
 }
 
+void Scheduler_Kill(Process* process) {
+	if (process->prev) {
+		process->prev->next = process->next;
+	}
+	if (process->next) {
+		process->next->prev = process->prev;
+	}
+
+	VM_Free(&process->vm);
+	// TODO: free all memory allocated by a process
+	Free(process->name);
+}
+
 void Scheduler_Run(void) {
 	scheduler.currentProcess = scheduler.firstProcess;
 
-	static bool noProc = false;
-
 	while (true) {
 		if (scheduler.currentProcess == NULL) {
-			if (!noProc) {
-				noProc = true;
-				puts("(no processes)");
+			puts("(no processes)");
+			return;
+		}
+
+		Process* proc = scheduler.currentProcess;
+
+		VM_Run(&proc->vm, 5);
+
+		scheduler.currentProcess = proc->next;
+
+		if (proc->vm.halted) {
+			if (proc == scheduler.firstProcess) {
+				scheduler.firstProcess = proc->next;
+			}
+			if (proc == scheduler.processes) {
+				scheduler.processes = proc->prev;
 			}
 
-			continue;
-		}
-		else {
-			noProc = false;
+			Scheduler_Kill(proc);
 		}
 
-		VM_Run(&scheduler.currentProcess->vm, 5);
-		scheduler.currentProcess = scheduler.currentProcess->next;
 		if (!scheduler.currentProcess) {
 			scheduler.currentProcess = scheduler.firstProcess;
 		}

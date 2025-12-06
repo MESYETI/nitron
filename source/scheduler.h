@@ -30,6 +30,7 @@ void     Scheduler_Init(void);
 void     Scheduler_Free(void);
 Process* Scheduler_GetProcess(size_t id);
 Process* Scheduler_StartProcess(Error* error, const char* path);
+void     Scheduler_Kill(Process* process);
 void     Scheduler_Run(void);
 
 #endif

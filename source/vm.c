@@ -104,9 +104,7 @@ INST(Jnz) {
 }
 
 INST(Halt) {
-	(void) vm;
-
-	exit(0);
+	vm->halted = true;
 }
 
 INST(ECall) {
@@ -265,6 +263,7 @@ void VM_Init(VM* vm, uint8_t* area, size_t areaSize) {
 	vm->rStack   = SafeAlloc(VM_RSTACK_SIZE);
 	vm->dsp      = vm->dStack;
 	vm->rsp      = vm->rStack;
+	vm->halted   = false;
 
 	static bool init = false;
 
@@ -346,23 +345,7 @@ void VM_Run(VM* vm, size_t instNum) {
 		}
 
 		insts[inst & 0x7F](vm);
+
+		if (vm->halted) return;
 	}
-}
-
-VM_State VM_SaveState(VM* vm) {
-	VM_State ret;
-	ret.areaPtr = vm->areaPtr;
-	ret.ip      = vm->ip;
-	ret.dsp     = vm->dsp;
-	ret.rsp     = vm->rsp;
-	memcpy(ret.reg, vm->reg, sizeof(vm->reg));
-	return ret;
-}
-
-void VM_LoadState(VM* vm, VM_State* state) {
-	vm->areaPtr = state->areaPtr;
-	vm->ip      = state->ip;
-	vm->dsp     = state->dsp;
-	vm->rsp     = state->rsp;
-	memcpy(vm->reg, state->reg, sizeof(vm->reg));
 }
