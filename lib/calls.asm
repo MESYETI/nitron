@@ -37,6 +37,9 @@ define N_ResetAsmBinLen       00040009
 define N_SetAsmBinPtr         0004000a
 define N_ExtendAsmBin         0004000b
 define N_SetAsmMode           0004000c
+define N_ResetAsmBin          0004000d
+define N_FreezeAsmLabels      0004000e
+define N_GetAsmBin            0004000f
 
 ; Filesystem
 define N_ReadFile      00050000

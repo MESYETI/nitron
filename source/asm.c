@@ -32,7 +32,6 @@ void Assembler_Init(Assembler* this, char* code, VM* vm) {
 	this->area     = vm->areaPtr;
 	this->areaSize = vm->areaSize;
 	this->dataPtr  = this->area;
-	this->data     = false;
 }
 
 void Assembler_Free(Assembler* this) {

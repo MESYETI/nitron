@@ -322,6 +322,38 @@ static void SetAssemblerMode(VM* vm) {
 	assembler->data = mode != 0;
 }
 
+static void ResetAssemblerBinary(VM* vm) {
+	-- vm->dsp;
+	Assembler* assembler = (Assembler*) vm->dsp[0];
+
+	if (assembler->bin) {
+		Free(assembler->bin);
+		assembler->bin = NULL;
+	}
+	assembler->binLen = 0;
+	assembler->binCap = 0;
+	assembler->binPtr = NULL;
+}
+
+static void FreezeAssemblerLabels(VM* vm) {
+	-- vm->dsp;
+	Assembler* assembler = (Assembler*) vm->dsp[0];
+
+	for (size_t i = 0; i < assembler->valuesLen; ++ i) {
+		Value* value = &assembler->values[i];
+
+		if (value->code) {
+			value->code  = false;
+			value->value = (uint32_t) (&assembler->bin[value->value]);
+		}
+	}
+}
+
+static void GetAssemblerBinary(VM* vm) {
+	Assembler* assembler = (Assembler*) vm->dsp[-1];
+	vm->dsp[-1]          = (uint32_t)   assembler->bin;
+}
+
 static void ReadFile(VM* vm) {
 	-- vm->dsp;
 	const char* path = (const char*) *vm->dsp;
@@ -427,7 +459,10 @@ void Calls_InitVMCalls(VM* vm) {
 		/* 0x09 */ &ResetAssemblerBinLen,
 		/* 0x0a */ &SetAssemblerBinPtr,
 		/* 0x0b */ &ExtendAssemblerBinary,
-		/* 0x0c */ &SetAssemblerMode
+		/* 0x0c */ &SetAssemblerMode,
+		/* 0x0d */ &ResetAssemblerBinary,
+		/* 0x0e */ &FreezeAssemblerLabels,
+		/* 0x0f */ &GetAssemblerBinary
 	};
 	ADD_SECTION(0x0004, sect0004);
 

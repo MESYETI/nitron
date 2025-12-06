@@ -109,6 +109,9 @@ This section has some space for user defined calls
 - `0x0a` - Set assembler binary pointer `( bin* asm* -- )`
 - `0x0b` - Extend assembler binary `( size asm* -- success )`
 - `0x0c` - Set assembler mode `( code=0,data=1 asm* -- )`
+- `0x0d` - Reset assembler binary `( asm* -- )`
+- `0x0e` - Freeze assembler labels `( asm* -- )`
+- `0x0f` - Get assembler binary `( asm* -- bin* )`
 
 ### Section `0x0005` - Filesystem
 - `0x00` - Read file `( path -- size contents* success )`
