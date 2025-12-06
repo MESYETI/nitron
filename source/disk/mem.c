@@ -44,7 +44,7 @@ Disk NewMemDisk(const char* name, uint8_t* mem, size_t size, bool readOnly) {
 	ret.read     = &ReadDisk;
 	ret.write    = &WriteDisk;
 
-	MemDisk* memDisk = SafeMalloc(sizeof(MemDisk));
+	MemDisk* memDisk = SafeAlloc(sizeof(MemDisk));
 	memDisk->mem     = mem;
 	memDisk->size    = size;
 	ret.data         = memDisk;

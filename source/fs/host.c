@@ -88,7 +88,7 @@ static Error WriteFile(FileSystem* p_fs, const char* path, size_t size, uint8_t*
 }
 
 FileSystem* Host_CreateFileSystem(Error* error, const char* path, const char* name) {
-	HostFS* ret = SafeMalloc(sizeof(HostFS));
+	HostFS* ret = SafeAlloc(sizeof(HostFS));
 	ret->parent.free       = &FreeFS;
 	ret->parent.fileExists = &FileExists;
 	ret->parent.readFile   = &ReadFile;

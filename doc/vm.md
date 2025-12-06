@@ -85,7 +85,7 @@ This section has some space for user defined calls
 ### Section `0x0003` - VM
 - `0x00` - Dump: `( -- )`
 - `0x01` - Get user calls amount `( -- size )`
-- `0x02` - Run on new instance `( code codeSize areaSize stackSize areaPtr -- )`
+- `0x02` - Removed
 - `0x03` - Error to string `( error -- str* )`
 - `0x04` - Dump memory: `( addr size -- )`
 - `0x05` - Get memory usage: `( -- used total )`

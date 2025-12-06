@@ -3,9 +3,9 @@
 
 #include "common.h"
 
-#define NEW(T) (T*) SafeMalloc(sizeof(T))
+#define NEW(T) (T*) SafeAlloc(sizeof(T))
 
-void* SafeMalloc(size_t size);
+void* SafeAlloc(size_t size);
 void* SafeRealloc(void* ptr, size_t size);
 
 // custom memory allocator

@@ -3,6 +3,6 @@
 
 #include "vm.h"
 
-void Calls_InitVMCalls(VM* vm);
+void Calls_InitVMCalls(ECallSect* sections);
 
 #endif

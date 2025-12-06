@@ -3,6 +3,7 @@
 #include "asm.h"
 #include "mem.h"
 #include "calls.h"
+#include "scheduler.h"
 #include "fs/ark.h"
 #include "fs/host.h"
 #include "disk/mem.h"
@@ -13,6 +14,7 @@ VM vm;
 
 int main(int argc, char** argv) {
 	InitAllocator();
+	Scheduler_Init();
 
 	puts("Nitron in-dev\n");
 
@@ -97,38 +99,19 @@ int main(int argc, char** argv) {
 		printf("%d B total, %d B used\n\n", usage.total, usage.used);
 	}
 
-	VM_Init(&vm);
-	Calls_InitVMCalls(&vm);
+	Scheduler_Init();
 
-	char* file;
-	success = FS_ReadFile(autoStart, &size, (uint8_t**) &file);
-
-	if (success != N_ERROR_SUCCESS) {
-		fprintf(stderr, "Failed to read %s: %s\n", autoStart, ErrorToString(success));
-		exit(1);
+	// start pid 1: whatever is in autostart
+	Error error;
+	Scheduler_StartProcess(&error, autoStart);
+	if (error != N_ERROR_SUCCESS) {
+		puts(autoStart);
+		fprintf(stderr, "Failed to start first process: %s\n", ErrorToString(error));
+		return 1;
 	}
 
-	file       = SafeRealloc(file, size + 1);
-	file[size] = 0;
-
-	Assembler assembler;
-	Assembler_Init(&assembler, file, &vm);
-	if (!Assembler_Assemble(&assembler, &vm.codeSize, true)) return 1;
-	vm.areaPtr = assembler.dataPtr;
-	vm.code    = assembler.bin;
-	Assembler_Free(&assembler);
-	Free(file);
-
-	/*if (dumpRom) {
-		printf("ROM is %d bytes\n", vm.codeSize);
-		for (size_t i = 0; i < vm.codeSize; ++ i) {
-			printf("%.8X: %.2X (%c)\n", i, vm.code[i], vm.code[i]);
-		}
-
-		return;
-	}*/
-	VM_Run(&vm);
-	Free(vm.code);
+	Scheduler_Run();
+	Scheduler_Free();
 
 	FreeAllocator();
 }

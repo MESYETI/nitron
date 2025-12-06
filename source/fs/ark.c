@@ -100,7 +100,7 @@ static ArkEntry ReadEntry(Reader* reader, Error* success) {
 
 	if (entry.folder) {
 		size_t length        = Read32(reader);
-		entry.folderContents = SafeMalloc(length * sizeof(ArkEntry));
+		entry.folderContents = SafeAlloc(length * sizeof(ArkEntry));
 		entry.folderSize     = length;
 
 		for (size_t i = 0; i < length; ++ i) {
@@ -134,7 +134,7 @@ static Error Read(Reader* reader) {
 	}
 
 	// read strings
-	reader->strings = SafeMalloc(reader->stringsLen + 1);
+	reader->strings = SafeAlloc(reader->stringsLen + 1);
 
 	reader->strings[reader->stringsLen] = 0;
 
@@ -155,7 +155,7 @@ static Error Read(Reader* reader) {
 }
 
 static Error ReadEntryContents(Reader* reader, ArkEntry* entry, uint8_t** dest) {
-	*dest = SafeMalloc(entry->size);
+	*dest = SafeAlloc(entry->size);
 	return reader->disk->read(reader->disk, entry->contentsOffset, entry->size, *dest);
 }
 
@@ -233,7 +233,7 @@ static Error ReadFile(FileSystem* p_fs, const char* path, size_t* size, uint8_t*
 }
 
 FileSystem* Ark_CreateFileSystem(Disk* disk, Error* error, const char* name) {
-	ArkFS* ret = SafeMalloc(sizeof(ArkFS));
+	ArkFS* ret = SafeAlloc(sizeof(ArkFS));
 	// expect caller to write to name
 
 	InitReader(&ret->reader, disk);

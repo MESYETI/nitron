@@ -254,7 +254,7 @@ bool Assembler_Assemble(Assembler* this, size_t* size, bool completion) {
 				strcpy(macro.name, &this->token[1]);
 
 				size_t contentsLen = strcspn(this->code, ":");
-				macro.contents     = SafeMalloc(contentsLen + 1);
+				macro.contents     = SafeAlloc(contentsLen + 1);
 
 				strncpy(macro.contents, this->code, contentsLen);
 

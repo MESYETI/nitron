@@ -14,7 +14,7 @@ void* ReadFile(const char* path, size_t* size) {
 	*size = ftell(file);
 	fseek(file, 0, SEEK_SET);
 
-	void* res = SafeMalloc(*size + 1);
+	void* res = SafeAlloc(*size + 1);
 	fread(res, 1, *size, file);
 	fclose(file);
 
@@ -23,7 +23,7 @@ void* ReadFile(const char* path, size_t* size) {
 }
 
 char* NewString(const char* src) {
-	char* ret = SafeMalloc(strlen(src) + 1);
+	char* ret = SafeAlloc(strlen(src) + 1);
 	strcpy(ret, src);
 	return ret;
 }

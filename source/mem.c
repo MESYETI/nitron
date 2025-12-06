@@ -7,7 +7,7 @@
 	#include "memzone.h"
 #endif
 
-void* SafeMalloc(size_t size) {
+void* SafeAlloc(size_t size) {
 	void* ret = Alloc(size);
 
 	if ((ret == NULL) && (size != 0)) {

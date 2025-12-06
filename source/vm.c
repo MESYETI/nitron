@@ -2,6 +2,10 @@
 #include <string.h>
 #include "vm.h"
 #include "mem.h"
+#include "calls.h"
+
+static ECallSect sections[VM_ECALL_SECTIONS];
+static void (*insts[128])(VM*);
 
 static void Jump(VM* vm, uint8_t* addr) {
 	vm->ip = addr;
@@ -115,12 +119,18 @@ INST(ECall) {
 		fprintf(stderr, "Invalid e-call section: %.4X\n", sect);
 		exit(1);
 	}
-	if (call >= vm->sections[sect].amount) {
+	if (call >= sections[sect].amount) {
+		fprintf(stderr, "Invalid e-call: %.4X\n", sect);
+		exit(1);
+	}
+	if (!sections[sect].calls[call]) {
 		fprintf(stderr, "Invalid e-call: %.4X\n", sect);
 		exit(1);
 	}
 
-	vm->sections[sect].calls[call](vm);
+	// printf("Calling %.4X in %.4X\n", call, sect);
+
+	sections[sect].calls[call](vm);
 }
 
 INST(Reg) {
@@ -244,76 +254,79 @@ INST(Ret) {
 	Jump(vm, (uint8_t*) *vm->rsp);
 }
 
-static uint8_t  area[VM_AREA_SIZE];
-static uint32_t dStack[VM_DSTACK_SIZE];
-static uint32_t rStack[VM_RSTACK_SIZE];
-
-void VM_Init(VM* vm) {
+void VM_Init(VM* vm, uint8_t* area, size_t areaSize) {
 	vm->area     = area;
 	vm->areaPtr  = area;
-	vm->areaSize = VM_AREA_SIZE;
+	vm->areaSize = areaSize;
 	vm->ip       = 0;
 	vm->code     = NULL;
 	vm->codeSize = 0;
-	vm->dStack   = dStack;
-	vm->rStack   = rStack;
+	vm->dStack   = SafeAlloc(VM_DSTACK_SIZE);
+	vm->rStack   = SafeAlloc(VM_RSTACK_SIZE);
 	vm->dsp      = vm->dStack;
 	vm->rsp      = vm->rStack;
 
-	for (size_t i = 0; i < sizeof(vm->insts) / sizeof(void*); ++ i) {
-		vm->insts[i] = NULL;
+	static bool init = false;
+
+	if (init) return;
+	init = true;
+
+	for (size_t i = 0; i < sizeof(insts) / sizeof(void*); ++ i) {
+		insts[i] = NULL;
 	}
 
-	vm->insts[0x00] = &Inst_Nop;
-	vm->insts[0x01] = &Inst_Add;
-	vm->insts[0x02] = &Inst_Sub;
-	vm->insts[0x03] = &Inst_Mul;
-	vm->insts[0x04] = &Inst_Div;
-	vm->insts[0x05] = &Inst_Mod;
-	vm->insts[0x06] = &Inst_R2D;
-	vm->insts[0x07] = &Inst_D2R;
-	vm->insts[0x08] = &Inst_Dup;
-	vm->insts[0x09] = &Inst_Over;
-	vm->insts[0x0A] = &Inst_Drop;
-	vm->insts[0x0B] = &Inst_Rot;
-	vm->insts[0x0C] = &Inst_Area;
-	vm->insts[0x0D] = &Inst_Read;
-	vm->insts[0x0E] = &Inst_Write;
-	vm->insts[0x0F] = &Inst_Jump;
-	vm->insts[0x10] = &Inst_Jnz;
-	vm->insts[0x11] = &Inst_Halt;
-	vm->insts[0x12] = &Inst_ECall;
-	vm->insts[0x13] = &Inst_Reg;
-	vm->insts[0x14] = &Inst_WReg;
-	vm->insts[0x15] = &Inst_Read8;
-	vm->insts[0x16] = &Inst_Write8;
-	vm->insts[0x17] = &Inst_Read16;
-	vm->insts[0x18] = &Inst_Write16;
-	vm->insts[0x19] = &Inst_Jz;
-	vm->insts[0x20] = &Inst_DivMod;
-	vm->insts[0x21] = &Inst_Equ;
-	vm->insts[0x22] = &Inst_Less;
-	vm->insts[0x23] = &Inst_Greater;
-	vm->insts[0x24] = &Inst_LE;
-	vm->insts[0x25] = &Inst_GE;
-	vm->insts[0x26] = &Inst_Neg;
-	vm->insts[0x27] = &Inst_And;
-	vm->insts[0x28] = &Inst_Xor;
-	vm->insts[0x29] = &Inst_Or;
-	vm->insts[0x2A] = &Inst_Not;
-	vm->insts[0x2B] = &Inst_Swap;
-	vm->insts[0x2C] = &Inst_Call;
-	vm->insts[0x2D] = &Inst_Ret;
+	insts[0x00] = &Inst_Nop;
+	insts[0x01] = &Inst_Add;
+	insts[0x02] = &Inst_Sub;
+	insts[0x03] = &Inst_Mul;
+	insts[0x04] = &Inst_Div;
+	insts[0x05] = &Inst_Mod;
+	insts[0x06] = &Inst_R2D;
+	insts[0x07] = &Inst_D2R;
+	insts[0x08] = &Inst_Dup;
+	insts[0x09] = &Inst_Over;
+	insts[0x0A] = &Inst_Drop;
+	insts[0x0B] = &Inst_Rot;
+	insts[0x0C] = &Inst_Area;
+	insts[0x0D] = &Inst_Read;
+	insts[0x0E] = &Inst_Write;
+	insts[0x0F] = &Inst_Jump;
+	insts[0x10] = &Inst_Jnz;
+	insts[0x11] = &Inst_Halt;
+	insts[0x12] = &Inst_ECall;
+	insts[0x13] = &Inst_Reg;
+	insts[0x14] = &Inst_WReg;
+	insts[0x15] = &Inst_Read8;
+	insts[0x16] = &Inst_Write8;
+	insts[0x17] = &Inst_Read16;
+	insts[0x18] = &Inst_Write16;
+	insts[0x19] = &Inst_Jz;
+	insts[0x20] = &Inst_DivMod;
+	insts[0x21] = &Inst_Equ;
+	insts[0x22] = &Inst_Less;
+	insts[0x23] = &Inst_Greater;
+	insts[0x24] = &Inst_LE;
+	insts[0x25] = &Inst_GE;
+	insts[0x26] = &Inst_Neg;
+	insts[0x27] = &Inst_And;
+	insts[0x28] = &Inst_Xor;
+	insts[0x29] = &Inst_Or;
+	insts[0x2A] = &Inst_Not;
+	insts[0x2B] = &Inst_Swap;
+	insts[0x2C] = &Inst_Call;
+	insts[0x2D] = &Inst_Ret;
+
+	Calls_InitVMCalls(sections);
 }
 
 void VM_Free(VM* vm) {
-	(void) vm;
+	Free(vm->dStack);
+	Free(vm->rStack);
+	Free(vm->code);
 }
 
-void VM_Run(VM* vm) {
-	vm->ip = vm->code;
-
-	while (true) {
+void VM_Run(VM* vm, size_t instNum) {
+	for (size_t i = 0; i < instNum; ++ i) {
 		uint8_t* ip   = vm->ip;
 		uint8_t  inst = *vm->ip;
 		++ vm->ip;
@@ -324,7 +337,7 @@ void VM_Run(VM* vm) {
 			vm->ip  += 4;
 		}
 
-		if (!vm->insts[inst & 0x7F]) {
+		if (!insts[inst & 0x7F]) {
 			fprintf(
 				stderr, "Invalid opcode %.2X at %p\n",
 				inst & 0x7F, ip
@@ -332,12 +345,12 @@ void VM_Run(VM* vm) {
 			exit(1);
 		}
 
-		vm->insts[inst & 0x7F](vm);
+		insts[inst & 0x7F](vm);
 	}
 }
 
-VM_StateStore VM_SaveState(VM* vm) {
-	VM_StateStore ret;
+VM_State VM_SaveState(VM* vm) {
+	VM_State ret;
 	ret.areaPtr = vm->areaPtr;
 	ret.ip      = vm->ip;
 	ret.dsp     = vm->dsp;
@@ -346,7 +359,7 @@ VM_StateStore VM_SaveState(VM* vm) {
 	return ret;
 }
 
-void VM_LoadState(VM* vm, VM_StateStore* state) {
+void VM_LoadState(VM* vm, VM_State* state) {
 	vm->areaPtr = state->areaPtr;
 	vm->ip      = state->ip;
 	vm->dsp     = state->dsp;

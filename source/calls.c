@@ -85,33 +85,6 @@ static void UserCallSize(VM* vm) {
 	++ vm->dsp;
 }
 
-static void RunNewInstance(VM* vm) {
-	-- vm->dsp;
-	uint8_t* areaPtr = (uint8_t*) *vm->dsp;
-	-- vm->dsp;
-	size_t stackSize = *vm->dsp;
-	-- vm->dsp;
-	size_t areaSize = *vm->dsp;
-	-- vm->dsp;
-	size_t codeSize = *vm->dsp;
-	-- vm->dsp;
-	uint8_t* code = (uint8_t*) *vm->dsp;
-
-	VM vm2;
-	vm2.area     = areaPtr;
-	vm2.areaSize = areaSize;
-	vm2.ip       = code;
-	vm2.code     = code;
-	vm2.codeSize = codeSize;
-	vm2.dStack   = SafeMalloc(stackSize * 4);
-	vm2.rStack   = SafeMalloc(stackSize * 4);
-	vm2.dsp      = vm2.dStack;
-	vm2.rsp      = vm2.rStack;
-	Calls_InitVMCalls(&vm2);
-
-	VM_Run(&vm2);
-}
-
 static void ErrorToStringCall(VM* vm) {
 	vm->dsp[-1] = (uint32_t) ErrorToString((Error) vm->dsp[-1]);
 }
@@ -149,46 +122,7 @@ static void Nothing(VM* vm) {
 }
 
 static void RunFile(VM* vm) {
-	const char* path = (const char*) vm->dsp[-1];
-	vm->dsp[-1]      = N_ERROR_SUCCESS;
-
-	char*  file;
-	size_t size;
-	Error  success = FS_ReadFile(path, &size, (uint8_t**) &file);
-
-	if (success != N_ERROR_SUCCESS) {
-		vm->dsp[-1] = success;
-		return;
-	}
-
-	file = Realloc(file, size + 1);
-
-	if (file == NULL) {
-		vm->dsp[-1] = N_ERROR_OUT_OF_MEMORY;
-		return;
-	}
-
-	file[size] = 0;	
-
-	size_t oldCodeSize = vm->codeSize;
-
-	Assembler assembler;
-	Assembler_Init(&assembler, file, vm);
-	if (!Assembler_Assemble(&assembler, &vm->codeSize, true)) {
-		vm->dsp[-1] = N_ERROR_GENERIC;
-		return;
-	}
-
-	VM_StateStore state = VM_SaveState(vm);
-	vm->areaPtr = assembler.dataPtr;
-	vm->code    = assembler.bin;
-	Assembler_Free(&assembler);
-	Free(file);
-
-	VM_Run(vm);
-	Free(vm->code);
-	VM_LoadState(vm, &state);
-	vm->codeSize = oldCodeSize;
+	(void) vm;
 }
 
 static void Assemble(VM* vm) {
@@ -408,9 +342,9 @@ static void WriteTextFile(VM* vm) {
 }
 
 #define ADD_SECTION(INDEX, BUF) \
-	vm->sections[INDEX] = (ECallSect) {sizeof(BUF) / sizeof(ECall), BUF}
+	sections[INDEX] = (ECallSect) {sizeof(BUF) / sizeof(ECall), BUF}
 
-void Calls_InitVMCalls(VM* vm) {
+void Calls_InitVMCalls(ECallSect* sections) {
 	static ECall sect0000[VM_USER_CALLS_AMOUNT];
 	ADD_SECTION(0x0000, sect0000);
 
@@ -435,7 +369,7 @@ void Calls_InitVMCalls(VM* vm) {
 	static ECall sect0003[] = {
 		/* 0x00 */ &Dump,
 		/* 0x01 */ &UserCallSize,
-		/* 0x02 */ &RunNewInstance,
+		/* 0x02 */ NULL,
 		/* 0x03 */ &ErrorToStringCall,
 		/* 0x04 */ &DumpMemory,
 		/* 0x05 */ &GetMemoryUsage,
